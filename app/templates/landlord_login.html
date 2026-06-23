@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Landlord Login - RentalVerify{% endblock %}
+{% block content %}
+<section class="page-head">
+  <span class="eyebrow">Landlord access</span>
+  <h1>Landlord login</h1>
+  <p>Use your credentials to view verification status and profile updates.</p>
+</section>
+
+<section class="card auth-card">
+  <form class="form-grid">
+    <label class="full">
+      Email
+      <input type="email" value="landlord@example.com">
+    </label>
+    <label class="full">
+      Password
+      <input type="password" value="password123">
+    </label>
+    <div class="button-row full">
+      <a class="btn btn-primary" href="/landlord/dashboard">Sign in</a>
+      <a class="btn btn-secondary" href="/landlord/register">Create account</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

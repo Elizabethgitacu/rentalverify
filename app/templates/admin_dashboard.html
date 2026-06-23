@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard - RentalVerify{% endblock %}
+{% block content %}
+<section class="page-head">
+  <span class="eyebrow">Admin dashboard</span>
+  <h1>Operations overview</h1>
+  <p>Monitor pending verifications, scam reports, and escalations.</p>
+</section>
+
+<section class="kpi-grid">
+  <div class="kpi"><span>Pending landlords</span><strong>{{ stats.pending }}</strong></div>
+  <div class="kpi"><span>Open reports</span><strong>{{ stats.open_reports }}</strong></div>
+  <div class="kpi"><span>Escalated</span><strong>{{ stats.escalated }}</strong></div>
+  <div class="kpi"><span>Verified this week</span><strong>{{ stats.verified_this_week }}</strong></div>
+</section>
+
+<section class="dashboard-grid">
+  <article class="card">
+    <h2>Alerts</h2>
+    <ul class="plain-list">
+      {% for alert in alerts %}
+      <li>{{ alert }}</li>
+      {% endfor %}
+    </ul>
+  </article>
+  <article class="card">
+    <h2>Quick actions</h2>
+    <div class="stack">
+      <a class="btn btn-primary" href="/admin/landlords">Review registrations</a>
+      <a class="btn btn-secondary" href="/admin/reports">Review reports</a>
+      <a class="btn btn-secondary" href="/admin/analytics">View analytics</a>
+    </div>
+  </article>
+</section>
+{% endblock %}

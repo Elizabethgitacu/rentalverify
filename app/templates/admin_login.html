@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Admin Login - RentalVerify{% endblock %}
+{% block content %}
+<section class="page-head">
+  <span class="eyebrow">Administrator access</span>
+  <h1>Admin login</h1>
+  <p>Restricted access for landlord review, scam moderation, and analytics.</p>
+</section>
+
+<section class="card auth-card">
+  <form class="form-grid">
+    <label class="full">
+      Username
+      <input type="text" value="admin@rentalverify.ke">
+    </label>
+    <label class="full">
+      Password
+      <input type="password" value="admin-password">
+    </label>
+    <div class="button-row full">
+      <a class="btn btn-primary" href="/admin/dashboard">Sign in</a>
+      <a class="btn btn-secondary" href="/">Back home</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Home - RentalVerify{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <span class="eyebrow">Public verification platform</span>
+    <h1>Check a landlord before you pay a deposit.</h1>
+    <p>
+      Search by phone number, name, national ID, or M-Pesa number. See whether a landlord is verified,
+      reported, or not found before you transfer money.
+    </p>
+    <div class="button-row">
+      <a class="btn btn-primary" href="/search">Search landlord</a>
+      <a class="btn btn-secondary" href="/report">Report scam</a>
+    </div>
+  </div>
+  <div class="hero-panel">
+    <div class="panel-label">Live snapshot</div>
+    <div class="hero-stat-grid">
+      <div class="stat-card"><strong>{{ stats.searches }}</strong><span>Searches</span></div>
+      <div class="stat-card"><strong>{{ stats.reports }}</strong><span>Reports</span></div>
+      <div class="stat-card"><strong>{{ stats.verified }}</strong><span>Verified landlords</span></div>
+      <div class="stat-card"><strong>{{ stats.resolved }}</strong><span>Reports resolved</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <h2>How it works</h2>
+    <p>A simple public workflow with admin review in the background.</p>
+  </div>
+  <div class="card-grid three">
+    <article class="card">
+      <h3>1. Search</h3>
+      <p>Enter a phone number, name, NID, or M-Pesa number to check a landlord.</p>
+    </article>
+    <article class="card">
+      <h3>2. Review status</h3>
+      <p>See a clear status, report count, and a warning when the record is high risk.</p>
+    </article>
+    <article class="card">
+      <h3>3. Report incidents</h3>
+      <p>Submit scam reports that admins can review, escalate, and track.</p>
+    </article>
+  </div>
+</section>
+
+<section class="section split">
+  <div>
+    <div class="section-head">
+      <h2>Featured landlords</h2>
+      <p>Placeholder data for the prototype.</p>
+    </div>
+    <div class="stack">
+      {% for landlord in featured_landlords %}
+      <article class="list-card">
+        <div>
+          <h3>{{ landlord.name }}</h3>
+          <p>{{ landlord.location }} - {{ landlord.reports }} reports</p>
+        </div>
+        <span class="status {{ landlord.badge|lower }}">{{ landlord.badge }}</span>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+  <aside class="note-box">
+    <h3>Important note</h3>
+    <p>
+      A "Not Found" result does not mean the landlord is safe. It only means the system has no record yet.
+    </p>
+    <ul class="plain-list">
+      <li>Cross-check the landlord with documents.</li>
+      <li>Verify the phone and M-Pesa number carefully.</li>
+      <li>Report suspicious behavior immediately.</li>
+    </ul>
+  </aside>
+</section>
+{% endblock %}

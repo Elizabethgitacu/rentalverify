@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}RentalVerify{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='css/main.css') }}">
+</head>
+<body>
+  <div class="site-shell">
+    <header class="topbar">
+      <div>
+        <div class="brand">RentalVerify</div>
+        <div class="brand-subtitle">Landlord verification and scam intelligence for Kenya</div>
+      </div>
+      <nav class="nav">
+        <a class="{% if active_page == 'home' %}active{% endif %}" href="/">Home</a>
+        <a class="{% if active_page == 'search' %}active{% endif %}" href="/search">Search</a>
+        <a class="{% if active_page == 'report' %}active{% endif %}" href="/report">Report</a>
+        <a class="{% if active_page.startswith('landlord') %}active{% endif %}" href="/landlord/register">Landlord</a>
+        <a class="{% if active_page.startswith('admin') %}active{% endif %}" href="/admin/dashboard">Admin</a>
+      </nav>
+    </header>
+
+    <main class="page">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</body>
+</html>

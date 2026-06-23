@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Search Result - RentalVerify{% endblock %}
+{% block content %}
+<section class="page-head">
+  <span class="eyebrow">Search result</span>
+  <h1>{{ landlord.name }}</h1>
+  <p>{{ landlord.location }} - {{ landlord.phone }}</p>
+</section>
+
+<section class="result-grid">
+  <article class="card result-card">
+    <div class="result-top">
+      <span class="status verified">{{ landlord.status }}</span>
+      <strong class="risk-score">High confidence match</strong>
+    </div>
+    <div class="detail-grid">
+      <div><span>National ID</span><strong>{{ landlord.nid }}</strong></div>
+      <div><span>M-Pesa</span><strong>{{ landlord.m_pesa }}</strong></div>
+      <div><span>Reports</span><strong>{{ landlord.reports }}</strong></div>
+      <div><span>Area</span><strong>{{ landlord.location }}</strong></div>
+    </div>
+    <div class="warning">
+      Not Found does not mean safe. Always confirm documents before sending money.
+    </div>
+  </article>
+
+  <article class="card">
+    <h2>Report timeline</h2>
+    <div class="timeline">
+      {% for item in report_timeline %}
+      <div class="timeline-item">
+        <span class="timeline-date">{{ item.date }}</span>
+        <p>{{ item.note }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </article>
+</section>
+
+<section class="section">
+  <div class="button-row">
+    <a class="btn btn-primary" href="/report">Submit report</a>
+    <a class="btn btn-secondary" href="/search">New search</a>
+  </div>
+</section>
+{% endblock %}

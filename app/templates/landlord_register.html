@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Landlord Registration - RentalVerify{% endblock %}
+{% block content %}
+<section class="page-head">
+  <span class="eyebrow">Landlord onboarding</span>
+  <h1>Register as a landlord</h1>
+  <p>Submit your details for verification by the administrator.</p>
+</section>
+
+<section class="card form-card">
+  <form class="form-grid">
+    <label>
+      Full name
+      <input type="text" value="Muriuki Property Services">
+    </label>
+    <label>
+      Email
+      <input type="email" value="landlord@example.com">
+    </label>
+    <label>
+      Phone number
+      <input type="text" value="0712 456 789">
+    </label>
+    <label>
+      National ID
+      <input type="text" value="2714 8891 2456">
+    </label>
+    <label>
+      M-Pesa number
+      <input type="text" value="254712456789">
+    </label>
+    <label class="full">
+      Property location
+      <input type="text" value="Kilimani, Nairobi">
+    </label>
+    <label class="full">
+      Ownership notes
+      <textarea rows="4">Registered owner, currently managing two apartments on Ring Road.</textarea>
+    </label>
+    <div class="button-row full">
+      <a class="btn btn-primary" href="/landlord/dashboard">Submit for review</a>
+      <a class="btn btn-secondary" href="/landlord/login">Already registered</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

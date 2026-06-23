@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Admin Analytics - RentalVerify{% endblock %}
+{% block content %}
+<section class="page-head">
+  <span class="eyebrow">Analytics</span>
+  <h1>Platform performance</h1>
+  <p>Placeholder metrics for searches, reports, approvals, and escalations.</p>
+</section>
+
+<section class="kpi-grid">
+  {% for item in kpis %}
+  <div class="kpi">
+    <span>{{ item.label }}</span>
+    <strong>{{ item.value }}</strong>
+  </div>
+  {% endfor %}
+</section>
+
+<section class="dashboard-grid">
+  <article class="card">
+    <h2>Weekly trend</h2>
+    <div class="bars">
+      {% for bar in bars %}
+      <div class="bar-row">
+        <span>{{ bar.label }}</span>
+        <div class="bar-track"><div class="bar-fill" style="width: {{ bar.value }}%;"></div></div>
+        <strong>{{ bar.value }}%</strong>
+      </div>
+      {% endfor %}
+    </div>
+  </article>
+  <article class="card">
+    <h2>Notes</h2>
+    <ul class="plain-list">
+      <li>Searches are public and do not require login.</li>
+      <li>Reports feed the admin review queue.</li>
+      <li>Verified landlords appear in public search results.</li>
+      <li>Every moderation action is logged.</li>
+    </ul>
+  </article>
+</section>
+{% endblock %}

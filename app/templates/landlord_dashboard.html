@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Landlord Dashboard - RentalVerify{% endblock %}
+{% block content %}
+<section class="page-head">
+  <span class="eyebrow">Landlord dashboard</span>
+  <h1>{{ profile.name }}</h1>
+  <p>Status: {{ profile.status }} - {{ profile.location }}</p>
+</section>
+
+<section class="dashboard-grid">
+  <article class="card">
+    <h2>Profile summary</h2>
+    <div class="detail-grid">
+      <div><span>Phone</span><strong>{{ profile.phone }}</strong></div>
+      <div><span>National ID</span><strong>{{ profile.nid }}</strong></div>
+      <div><span>M-Pesa</span><strong>{{ profile.m_pesa }}</strong></div>
+      <div><span>Reports</span><strong>{{ profile.reports }}</strong></div>
+    </div>
+  </article>
+
+  <article class="card">
+    <h2>Verification checklist</h2>
+    <ul class="checklist">
+      {% for item in documents %}
+      <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+  </article>
+</section>
+
+<section class="section">
+  <div class="card">
+    <h2>Recent activity</h2>
+    <div class="timeline">
+      <div class="timeline-item">
+        <span class="timeline-date">2026-06-20</span>
+        <p>Registration submitted for review.</p>
+      </div>
+      <div class="timeline-item">
+        <span class="timeline-date">2026-06-21</span>
+        <p>Admin requested clearer property ownership proof.</p>
+      </div>
+      <div class="timeline-item">
+        <span class="timeline-date">2026-06-23</span>
+        <p>Profile waiting for approval.</p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

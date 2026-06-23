@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Report Confirmation - RentalVerify{% endblock %}
+{% block content %}
+<section class="page-head">
+  <span class="eyebrow">Confirmation</span>
+  <h1>Report submitted successfully</h1>
+  <p>Your report reference number is {{ reference }}.</p>
+</section>
+
+<section class="card confirmation-card">
+  <div class="big-ref">{{ reference }}</div>
+  <p>The report has been stored and queued for admin review.</p>
+  <div class="button-row">
+    <a class="btn btn-primary" href="/search">Search another landlord</a>
+    <a class="btn btn-secondary" href="/admin/reports">View admin report queue</a>
+  </div>
+</section>
+{% endblock %}

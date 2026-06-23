@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Page Not Found - RentalVerify{% endblock %}
+{% block content %}
+<section class="hero error-hero">
+  <div class="hero-copy">
+    <span class="eyebrow">404</span>
+    <h1>That page does not exist.</h1>
+    <p>Use the navigation to return to a valid RentalVerify page.</p>
+    <div class="button-row">
+      <a class="btn btn-primary" href="/">Go home</a>
+      <a class="btn btn-secondary" href="/search">Search landlord</a>
+    </div>
+  </div>
+  <div class="hero-panel error-panel">
+    <div class="panel-label">Placeholder state</div>
+    <p>The route was not found in the prototype.</p>
+  </div>
+</section>
+{% endblock %}

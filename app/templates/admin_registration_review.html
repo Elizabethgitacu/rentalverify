@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Admin Registration Review - RentalVerify{% endblock %}
+{% block content %}
+<section class="page-head">
+  <span class="eyebrow">Registration queue</span>
+  <h1>Review landlord submissions</h1>
+  <p>Approve or reject pending registrations.</p>
+</section>
+
+<section class="card table-card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Phone</th>
+          <th>Location</th>
+          <th>Submitted</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in pending_landlords %}
+        <tr>
+          <td>{{ item.name }}</td>
+          <td>{{ item.phone }}</td>
+          <td>{{ item.location }}</td>
+          <td>{{ item.submitted }}</td>
+          <td><span class="status pending">Pending</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="section">
+  <div class="button-row">
+    <a class="btn btn-primary" href="/admin/dashboard">Back to dashboard</a>
+    <a class="btn btn-secondary" href="/admin/reports">Open report queue</a>
+  </div>
+</section>
+{% endblock %}
