@@ -6,12 +6,12 @@
     <span class="eyebrow">Public verification platform</span>
     <h1>Check a landlord before you pay a deposit.</h1>
     <p>
-      Search by phone number, name, national ID, or M-Pesa number. See whether a landlord is verified,
-      reported, or not found before you transfer money.
+      Search by phone number, name, national ID, or M-Pesa number. View scam history and report suspicious activity.
     </p>
     <div class="button-row">
       <a class="btn btn-primary" href="/search">Search landlord</a>
       <a class="btn btn-secondary" href="/report">Report scam</a>
+      <a class="btn btn-secondary" href="/register">Create account</a>
     </div>
     <div class="feature-strip">
       <div>
@@ -23,8 +23,8 @@
         <strong>No login needed</strong>
       </div>
       <div>
-        <span>Admin review</span>
-        <strong>Escalations tracked</strong>
+        <span>Role-based dashboards</span>
+        <strong>Clean navigation</strong>
       </div>
     </div>
   </div>
@@ -36,17 +36,9 @@
       <div class="stat-card"><strong>{{ stats.verified }}</strong><span>Verified landlords</span></div>
       <div class="stat-card"><strong>{{ stats.resolved }}</strong><span>Reports resolved</span></div>
     </div>
-    <div class="hero-login-grid">
-      <a class="portal-card" href="/user/login">
-        <span>Customer access</span>
-        <strong>Log in</strong>
-        <p>Track reports and view saved search activity.</p>
-      </a>
-      <a class="portal-card" href="/landlord/login">
-        <span>Landlord portal</span>
-        <strong>Log in</strong>
-        <p>Check your registration and profile status.</p>
-      </a>
+    <div class="button-row">
+      <a class="btn btn-primary" href="/login">Login</a>
+      <a class="btn btn-secondary" href="/register">Register</a>
     </div>
   </div>
 </section>
@@ -54,7 +46,7 @@
 <section class="section">
   <div class="section-head">
     <h2>How it works</h2>
-    <p>A simple public workflow with admin review in the background.</p>
+    <p>A simple public workflow with role-specific dashboards in the background.</p>
   </div>
   <div class="card-grid three">
     <article class="card">

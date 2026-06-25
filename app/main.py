@@ -10,17 +10,21 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.storage import (
     approve_landlord,
     authenticate,
+    close_report,
+    create_account,
     create_scam_report,
     dashboard_stats,
     demo_store,
-    homepage_stats,
-    close_report,
-    escalate_report,
+    get_landlord_profile_by_email,
     get_pending_landlords,
+    get_recent_reports,
+    get_recent_searches,
     get_reports,
+    get_user_dashboard_overview,
+    homepage_stats,
+    escalate_report,
     log_search,
     reject_landlord,
-    register_landlord,
     search_landlord,
     search_timeline,
 )
@@ -39,9 +43,11 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 
 def render(request: Request, template_name: str, **context):
+    current_user = request.session.get("user")
     context.setdefault("request", request)
     context.setdefault("active_page", "")
-    context.setdefault("current_user", request.session.get("user"))
+    context.setdefault("current_user", current_user)
+    context.setdefault("dashboard_url", dashboard_url_for_role(current_user.get("role")) if current_user else "")
     return templates.TemplateResponse(request=request, name=template_name, context=context)
 
 
@@ -52,6 +58,14 @@ def redirect(url: str) -> RedirectResponse:
 def is_role(request: Request, role: str) -> bool:
     user = request.session.get("user")
     return bool(user and user.get("role") == role)
+
+
+def dashboard_url_for_role(role: str) -> str:
+    return {
+        "user": "/user/dashboard",
+        "landlord": "/landlord/dashboard",
+        "admin": "/admin/dashboard",
+    }.get(role, "/")
 
 
 def demo_landlord_profile() -> dict:
@@ -78,6 +92,95 @@ def home(request: Request):
         featured_landlords=featured_landlords,
         stats=homepage_stats(),
     )
+
+
+@app.get("/login", response_class=HTMLResponse)
+def login_page(request: Request, role: str = Query(default="user")):
+    role = role.lower()
+    if role not in {"user", "landlord", "admin"}:
+        role = "user"
+    return render(
+        request,
+        "login.html",
+        active_page="login",
+        role=role,
+    )
+
+
+@app.post("/login", response_class=HTMLResponse)
+def login_submit(
+    request: Request,
+    role: str = Form(...),
+    email: str = Form(...),
+    password: str = Form(...),
+):
+    role = role.lower()
+    if authenticate(email, password, role):
+        request.session["user"] = {"role": role, "email": email, "name": role.title()}
+        if role == "landlord":
+            request.session["landlord_profile"] = get_landlord_profile_by_email(email) or demo_landlord_profile()
+        return redirect(dashboard_url_for_role(role))
+    return render(
+        request,
+        "login.html",
+        active_page="login",
+        role=role,
+        error="Invalid credentials for that role.",
+    )
+
+
+@app.get("/register", response_class=HTMLResponse)
+def register_page(request: Request, role: str = Query(default="user")):
+    role = role.lower()
+    if role not in {"user", "landlord"}:
+        role = "user"
+    return render(
+        request,
+        "register.html",
+        active_page="register",
+        role=role,
+    )
+
+
+@app.post("/register", response_class=HTMLResponse)
+def register_submit(
+    request: Request,
+    role: str = Form(...),
+    full_name: str = Form(...),
+    email: str = Form(...),
+    password: str = Form(...),
+    phone_number: str = Form(""),
+    national_id_number: str = Form(""),
+    m_pesa_number: str = Form(""),
+    property_location: str = Form(""),
+    ownership_notes: str = Form(""),
+):
+    role = role.lower()
+    if role not in {"user", "landlord"}:
+        return render(request, "register.html", active_page="register", role="user", error="Choose User or Landlord.")
+    if role == "landlord" and not all([national_id_number.strip(), m_pesa_number.strip(), property_location.strip()]):
+        return render(request, "register.html", active_page="register", role=role, error="Landlord registration needs ID, M-Pesa, and property location.")
+    try:
+        account = create_account(
+            {
+                "role": role,
+                "full_name": full_name,
+                "email": email,
+                "password": password,
+                "phone_number": phone_number,
+                "national_id_number": national_id_number,
+                "m_pesa_number": m_pesa_number,
+                "property_location": property_location,
+                "ownership_notes": ownership_notes,
+            }
+        )
+    except Exception as exc:
+        return render(request, "register.html", active_page="register", role=role, error=str(exc))
+
+    request.session["user"] = {"role": role, "email": email, "name": full_name}
+    if role == "landlord":
+        request.session["landlord_profile"] = account.get("landlord_profile")
+    return redirect(dashboard_url_for_role(role))
 
 
 @app.get("/search", response_class=HTMLResponse)
@@ -182,55 +285,17 @@ def report_confirmation(request: Request, reference: str = Query(default="RV-202
 
 @app.get("/landlord/register", response_class=HTMLResponse)
 def landlord_register_page(request: Request):
-    return render(
-        request,
-        "landlord_register.html",
-        active_page="landlord_register",
-    )
+    return redirect("/register?role=landlord")
 
 
 @app.post("/landlord/register", response_class=HTMLResponse)
-def landlord_register_submit(
-    request: Request,
-    full_name: str = Form(...),
-    email: str = Form(...),
-    phone_number: str = Form(...),
-    national_id_number: str = Form(...),
-    m_pesa_number: str = Form(...),
-    property_location: str = Form(...),
-    ownership_notes: str = Form(...),
-):
-    register_landlord(
-        {
-            "full_name": full_name,
-            "email": email,
-            "phone_number": phone_number,
-            "national_id_number": national_id_number,
-            "m_pesa_number": m_pesa_number,
-            "property_location": property_location,
-            "ownership_notes": ownership_notes,
-        }
-    )
-    request.session["user"] = {"role": "landlord", "name": full_name, "email": email}
-    request.session["landlord_profile"] = {
-        "name": full_name,
-        "phone": phone_number,
-        "nid": national_id_number,
-        "m_pesa": m_pesa_number,
-        "location": property_location,
-        "status": "Pending Review",
-        "reports": 0,
-    }
-    return redirect("/landlord/dashboard")
+def landlord_register_submit(request: Request):
+    return redirect("/register?role=landlord")
 
 
 @app.get("/landlord/login", response_class=HTMLResponse)
 def landlord_login(request: Request):
-    return render(
-        request,
-        "landlord_login.html",
-        active_page="landlord_login",
-    )
+    return redirect("/login?role=landlord")
 
 
 @app.post("/landlord/login", response_class=HTMLResponse)
@@ -241,23 +306,14 @@ def landlord_login_submit(
 ):
     if authenticate(email, password, "landlord"):
         request.session["user"] = {"role": "landlord", "email": email, "name": "Landlord"}
-        request.session.setdefault("landlord_profile", demo_landlord_profile())
+        request.session["landlord_profile"] = get_landlord_profile_by_email(email) or demo_landlord_profile()
         return redirect("/landlord/dashboard")
-    return render(
-        request,
-        "landlord_login.html",
-        active_page="landlord_login",
-        error="Invalid landlord credentials.",
-    )
+    return redirect("/login?role=landlord")
 
 
 @app.get("/user/login", response_class=HTMLResponse)
 def user_login(request: Request):
-    return render(
-        request,
-        "user_login.html",
-        active_page="user_login",
-    )
+    return redirect("/login?role=user")
 
 
 @app.post("/user/login", response_class=HTMLResponse)
@@ -268,20 +324,30 @@ def user_login_submit(
 ):
     if authenticate(email, password, "user"):
         request.session["user"] = {"role": "user", "email": email, "name": "User"}
-        return redirect("/search")
+        return redirect("/user/dashboard")
+    return redirect("/login?role=user")
+
+
+@app.get("/user/dashboard", response_class=HTMLResponse)
+def user_dashboard(request: Request):
+    if not is_role(request, "user"):
+        return redirect("/login?role=user")
     return render(
         request,
-        "user_login.html",
-        active_page="user_login",
-        error="Invalid user credentials.",
+        "user_dashboard.html",
+        active_page="user_dashboard",
+        overview=get_user_dashboard_overview(),
+        recent_searches=get_recent_searches(),
+        recent_reports=get_recent_reports(),
     )
 
 
 @app.get("/landlord/dashboard", response_class=HTMLResponse)
 def landlord_dashboard(request: Request):
     if not is_role(request, "landlord"):
-        return redirect("/landlord/login")
-    profile = request.session.get("landlord_profile") or demo_landlord_profile()
+        return redirect("/login?role=landlord")
+    user = request.session.get("user") or {}
+    profile = request.session.get("landlord_profile") or get_landlord_profile_by_email(user.get("email", "")) or demo_landlord_profile()
     return render(
         request,
         "landlord_dashboard.html",
@@ -298,11 +364,7 @@ def landlord_dashboard(request: Request):
 
 @app.get("/admin/login", response_class=HTMLResponse)
 def admin_login(request: Request):
-    return render(
-        request,
-        "admin_login.html",
-        active_page="admin_login",
-    )
+    return redirect("/login?role=admin")
 
 
 @app.post("/admin/login", response_class=HTMLResponse)
@@ -314,12 +376,7 @@ def admin_login_submit(
     if authenticate(email, password, "admin"):
         request.session["user"] = {"role": "admin", "email": email, "name": "Admin"}
         return redirect("/admin/dashboard")
-    return render(
-        request,
-        "admin_login.html",
-        active_page="admin_login",
-        error="Invalid administrator credentials.",
-    )
+    return redirect("/login?role=admin")
 
 
 @app.get("/admin/access", response_class=HTMLResponse)
@@ -330,7 +387,7 @@ def admin_access(request: Request):
 @app.get("/admin/dashboard", response_class=HTMLResponse)
 def admin_dashboard(request: Request):
     if not is_role(request, "admin"):
-        return redirect("/admin/login")
+        return redirect("/login?role=admin")
     stats = dashboard_stats()
     return render(
         request,
@@ -348,7 +405,7 @@ def admin_dashboard(request: Request):
 @app.get("/admin/landlords", response_class=HTMLResponse)
 def admin_registration_review(request: Request):
     if not is_role(request, "admin"):
-        return redirect("/admin/login")
+        return redirect("/login?role=admin")
     return render(
         request,
         "admin_registration_review.html",
@@ -360,7 +417,7 @@ def admin_registration_review(request: Request):
 @app.get("/admin/reports", response_class=HTMLResponse)
 def admin_report_review(request: Request):
     if not is_role(request, "admin"):
-        return redirect("/admin/login")
+        return redirect("/login?role=admin")
     return render(
         request,
         "admin_report_review.html",
@@ -372,7 +429,7 @@ def admin_report_review(request: Request):
 @app.get("/admin/analytics", response_class=HTMLResponse)
 def admin_analytics(request: Request):
     if not is_role(request, "admin"):
-        return redirect("/admin/login")
+        return redirect("/login?role=admin")
     stats = dashboard_stats()
     return render(
         request,
@@ -401,10 +458,18 @@ def logout(request: Request):
     return redirect("/")
 
 
+@app.get("/dashboard")
+def dashboard_home(request: Request):
+    user = request.session.get("user")
+    if not user:
+        return redirect("/login")
+    return redirect(dashboard_url_for_role(user.get("role", "")))
+
+
 @app.post("/admin/landlords/{landlord_id}/approve")
 def admin_landlord_approve(request: Request, landlord_id: int):
     if not is_role(request, "admin"):
-        return redirect("/admin/login")
+        return redirect("/login?role=admin")
     approve_landlord(landlord_id, actor_user_id=None)
     return redirect("/admin/landlords")
 
@@ -412,7 +477,7 @@ def admin_landlord_approve(request: Request, landlord_id: int):
 @app.post("/admin/landlords/{landlord_id}/reject")
 def admin_landlord_reject(request: Request, landlord_id: int, reason: str = Form("")):
     if not is_role(request, "admin"):
-        return redirect("/admin/login")
+        return redirect("/login?role=admin")
     reject_landlord(landlord_id, reason=reason, actor_user_id=None)
     return redirect("/admin/landlords")
 
@@ -420,7 +485,7 @@ def admin_landlord_reject(request: Request, landlord_id: int, reason: str = Form
 @app.post("/admin/reports/{report_id}/escalate")
 def admin_report_escalate(request: Request, report_id: int):
     if not is_role(request, "admin"):
-        return redirect("/admin/login")
+        return redirect("/login?role=admin")
     escalate_report(report_id, actor_user_id=None)
     return redirect("/admin/reports")
 
@@ -428,7 +493,7 @@ def admin_report_escalate(request: Request, report_id: int):
 @app.post("/admin/reports/{report_id}/close")
 def admin_report_close(request: Request, report_id: int):
     if not is_role(request, "admin"):
-        return redirect("/admin/login")
+        return redirect("/login?role=admin")
     close_report(report_id, actor_user_id=None)
     return redirect("/admin/reports")
 

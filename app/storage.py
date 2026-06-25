@@ -452,8 +452,142 @@ def _seed_data() -> None:
 def init_db() -> None:
     with _connect() as conn:
         conn.executescript(SCHEMA_SQL)
-    if os.getenv("RVERIFY_SEED_DEMO", "0").lower() in {"1", "true", "yes"}:
-        _seed_data()
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) AS count FROM users WHERE role = 'admin'")
+        if cur.fetchone()[0] == 0:
+            cur.execute(
+                """
+                INSERT INTO users (full_name, email, phone_number, password_hash, role, is_active, created_at, updated_at)
+                VALUES (?, ?, ?, ?, 'admin', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """,
+                ("Admin", "admin@rentalverify.ke", "", "admin-password"),
+            )
+        conn.commit()
+
+
+def create_account(form: dict[str, str]) -> dict[str, Any]:
+    role = form["role"].strip().lower()
+    if role not in {"user", "landlord"}:
+        raise ValueError("Unsupported registration role.")
+
+    with _connect() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO users (full_name, email, phone_number, password_hash, role, is_active, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            """,
+            (
+                form["full_name"],
+                form["email"],
+                form.get("phone_number", ""),
+                form["password"],
+                role,
+            ),
+        )
+        user_id = cur.lastrowid
+
+        landlord_profile = None
+        if role == "landlord":
+            cur.execute(
+                """
+                INSERT INTO landlord_profiles (
+                    user_id, full_name, email, phone_number, national_id_number, m_pesa_number,
+                    property_location, ownership_notes, verification_status, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """,
+                (
+                    user_id,
+                    form["full_name"],
+                    form["email"],
+                    form.get("phone_number", ""),
+                    form.get("national_id_number", ""),
+                    form.get("m_pesa_number", ""),
+                    form.get("property_location", ""),
+                    form.get("ownership_notes", ""),
+                ),
+            )
+            landlord_profile = {
+                "id": cur.lastrowid,
+                "name": form["full_name"],
+                "phone": form.get("phone_number", ""),
+                "nid": form.get("national_id_number", ""),
+                "m_pesa": form.get("m_pesa_number", ""),
+                "location": form.get("property_location", ""),
+                "status": "Pending Review",
+                "reports": 0,
+            }
+        conn.commit()
+
+    account = {
+        "user_id": user_id,
+        "role": role,
+        "name": form["full_name"],
+        "email": form["email"],
+        "phone_number": form.get("phone_number", ""),
+        "landlord_profile": landlord_profile,
+    }
+    return account
+
+
+def get_landlord_profile_by_email(email: str) -> dict[str, Any] | None:
+    row = _fetchone(
+        """
+        SELECT id, full_name AS name, phone_number AS phone, national_id_number AS nid,
+               m_pesa_number AS m_pesa, property_location AS location, verification_status AS status
+        FROM landlord_profiles
+        WHERE LOWER(email) = LOWER(?)
+        ORDER BY created_at DESC
+        LIMIT 1
+        """,
+        (email,),
+    )
+    if not row:
+        return None
+    row["status"] = _pretty_status(str(row["status"]))
+    row["reports"] = _fetchone(
+        "SELECT COUNT(*) AS count FROM scam_reports WHERE LOWER(landlord_name) = LOWER(?)",
+        (row["name"],),
+    )["count"]
+    return row
+
+
+def get_user_dashboard_overview() -> dict[str, int]:
+    searches = _fetchone("SELECT COUNT(*) AS count FROM search_logs") or {"count": 0}
+    reports = _fetchone("SELECT COUNT(*) AS count FROM scam_reports") or {"count": 0}
+    pending = _fetchone("SELECT COUNT(*) AS count FROM landlord_profiles WHERE verification_status = 'pending'") or {"count": 0}
+    return {
+        "searches": int(searches["count"]),
+        "reports": int(reports["count"]),
+        "pending_landlords": int(pending["count"]),
+    }
+
+
+def get_recent_searches(limit: int = 5) -> list[dict[str, Any]]:
+    return _fetchall(
+        """
+        SELECT search_term, search_type, location, result_status, date(created_at) AS searched_at
+        FROM search_logs
+        ORDER BY created_at DESC
+        LIMIT ?
+        """,
+        (limit,),
+    )
+
+
+def get_recent_reports(limit: int = 5) -> list[dict[str, Any]]:
+    rows = _fetchall(
+        """
+        SELECT reference_number AS ref, landlord_name AS landlord, status, date(created_at) AS created_at
+        FROM scam_reports
+        ORDER BY created_at DESC
+        LIMIT ?
+        """,
+        (limit,),
+    )
+    for row in rows:
+        row["status"] = _pretty_report_status(str(row["status"]))
+    return rows
 
 
 def _fetchone(sql: str, params: tuple[Any, ...] = ()) -> dict[str, Any] | None:

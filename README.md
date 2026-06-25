@@ -2,8 +2,9 @@
 
 RentalVerify now has:
 - server-rendered pages
-- form handling
-- session-based login flows
+- public landing page
+- shared login/register pages
+- role-based dashboards
 - SQLite-backed storage
 - a simple database init runner
 
@@ -16,6 +17,15 @@ uvicorn app.main:app --reload
 ```
 
 The SQLite database file is created automatically at `rentalverify.sqlite3`.
+
+Public auth pages:
+- `/login`
+- `/register`
+
+Dashboards:
+- `/user/dashboard`
+- `/landlord/dashboard`
+- `/admin/dashboard`
 
 ## Pages
 

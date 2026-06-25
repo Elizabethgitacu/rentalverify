@@ -7,9 +7,9 @@
   <link rel="stylesheet" href="{{ url_for('static', path='css/main.css') }}">
 </head>
 <body>
-  <div class="site-shell" autocomplete="off">
+  <div class="site-shell">
     <header class="topbar">
-      <div>
+      <div class="brand-wrap">
         <div class="brand">RentalVerify</div>
         <div class="brand-subtitle">Landlord verification and scam intelligence for Kenya</div>
       </div>
@@ -17,11 +17,18 @@
         <a class="{% if active_page == 'home' %}active{% endif %}" href="/">Home</a>
         <a class="{% if active_page == 'search' %}active{% endif %}" href="/search">Search</a>
         <a class="{% if active_page == 'report' %}active{% endif %}" href="/report">Report</a>
-        <a class="{% if active_page.startswith('landlord') %}active{% endif %}" href="/landlord/register">Landlord</a>
+        {% if current_user %}
+        <a class="{% if active_page.endswith('dashboard') %}active{% endif %}" href="{{ dashboard_url if dashboard_url else '/' }}">Dashboard</a>
+        {% endif %}
       </nav>
       <div class="topbar-actions">
-        <a class="btn btn-secondary btn-sm" href="/user/login">User login</a>
-        <a class="btn btn-primary btn-sm" href="/landlord/login">Landlord login</a>
+        {% if current_user %}
+        <a class="btn btn-secondary btn-sm" href="{{ dashboard_url if dashboard_url else '/' }}">Dashboard</a>
+        <a class="btn btn-primary btn-sm" href="/logout">Logout</a>
+        {% else %}
+        <a class="btn btn-secondary btn-sm" href="/register">Register</a>
+        <a class="btn btn-primary btn-sm" href="/login">Login</a>
+        {% endif %}
       </div>
     </header>
 
@@ -38,8 +45,8 @@
       <div class="footer-links">
         <a href="/search">Search</a>
         <a href="/report">Report</a>
-        <a href="/user/login">User login</a>
-        <a href="/landlord/login">Landlord login</a>
+        <a href="/register">Register</a>
+        <a href="/login">Login</a>
       </div>
       <div class="footer-note">
         <span>External users first. Admin tools remain restricted.</span>

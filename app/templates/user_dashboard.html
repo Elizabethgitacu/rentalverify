@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}User Dashboard - RentalVerify{% endblock %}
+{% block content %}
+<section class="dashboard-shell">
+  <aside class="sidebar">
+    <div>
+      <span class="eyebrow">User area</span>
+      <h1>Dashboard</h1>
+      <p>Search, report, and track activity.</p>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="active" href="/user/dashboard">Overview</a>
+      <a href="/search">Search landlords</a>
+      <a href="/report">Report scam</a>
+      <a href="#recent-searches">Recent searches</a>
+      <a href="#recent-reports">Recent reports</a>
+      <a href="/logout">Logout</a>
+    </nav>
+  </aside>
+
+  <div class="dashboard-main">
+    <section class="page-head compact">
+      <span class="eyebrow">Account overview</span>
+      <h1>User dashboard</h1>
+      <p>Keep your searches and reports in one place.</p>
+    </section>
+
+    <section class="kpi-grid">
+      <div class="kpi"><span>Searches</span><strong>{{ overview.searches }}</strong></div>
+      <div class="kpi"><span>Reports</span><strong>{{ overview.reports }}</strong></div>
+      <div class="kpi"><span>Pending landlords</span><strong>{{ overview.pending_landlords }}</strong></div>
+      <div class="kpi"><span>Quick actions</span><strong>2</strong></div>
+    </section>
+
+    <section class="dashboard-grid">
+      <article class="card" id="recent-searches">
+        <div class="panel-label">Recent searches</div>
+        <div class="stack">
+          {% for item in recent_searches %}
+          <div class="list-card">
+            <div>
+              <h3>{{ item.search_term }}</h3>
+              <p>{{ item.location }} • {{ item.searched_at }}</p>
+            </div>
+            <span class="status {{ item.result_status|lower|replace(' ', '-') }}">{{ item.result_status }}</span>
+          </div>
+          {% else %}
+          <p>No searches yet.</p>
+          {% endfor %}
+        </div>
+      </article>
+
+      <article class="card" id="recent-reports">
+        <div class="panel-label">Recent reports</div>
+        <div class="stack">
+          {% for item in recent_reports %}
+          <div class="list-card">
+            <div>
+              <h3>{{ item.ref }}</h3>
+              <p>{{ item.landlord }} • {{ item.created_at }}</p>
+            </div>
+            <span class="tag">{{ item.status }}</span>
+          </div>
+          {% else %}
+          <p>No reports yet.</p>
+          {% endfor %}
+        </div>
+      </article>
+    </section>
+  </div>
+</section>
+{% endblock %}

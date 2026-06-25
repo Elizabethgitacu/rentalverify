@@ -1,50 +1,67 @@
 {% extends "base.html" %}
 {% block title %}Landlord Dashboard - RentalVerify{% endblock %}
 {% block content %}
-<section class="page-head">
-  <span class="eyebrow">Landlord dashboard</span>
-  <h1>{{ profile.name }}</h1>
-  <p>Status: {{ profile.status }} - {{ profile.location }}</p>
-</section>
-
-<section class="dashboard-grid">
-  <article class="card">
-    <h2>Profile summary</h2>
-    <div class="detail-grid">
-      <div><span>Phone</span><strong>{{ profile.phone }}</strong></div>
-      <div><span>National ID</span><strong>{{ profile.nid }}</strong></div>
-      <div><span>M-Pesa</span><strong>{{ profile.m_pesa }}</strong></div>
-      <div><span>Reports</span><strong>{{ profile.reports }}</strong></div>
+<section class="dashboard-shell">
+  <aside class="sidebar">
+    <div>
+      <span class="eyebrow">Landlord area</span>
+      <h1>Dashboard</h1>
+      <p>Check your profile and verification status.</p>
     </div>
-  </article>
+    <nav class="sidebar-nav">
+      <a class="active" href="/landlord/dashboard">Overview</a>
+      <a href="#profile">Profile</a>
+      <a href="#documents">Documents</a>
+      <a href="#activity">Activity</a>
+      <a href="/search">Public search</a>
+      <a href="/logout">Logout</a>
+    </nav>
+  </aside>
 
-  <article class="card">
-    <h2>Verification checklist</h2>
-    <ul class="checklist">
-      {% for item in documents %}
-      <li>{{ item }}</li>
-      {% endfor %}
-    </ul>
-  </article>
-</section>
+  <div class="dashboard-main">
+    <section class="page-head compact">
+      <span class="eyebrow">Verification status</span>
+      <h1>{{ profile.name }}</h1>
+      <p>{{ profile.status }} • {{ profile.location }}</p>
+    </section>
 
-<section class="section">
-  <div class="card">
-    <h2>Recent activity</h2>
-    <div class="timeline">
-      <div class="timeline-item">
-        <span class="timeline-date">2026-06-20</span>
-        <p>Registration submitted for review.</p>
+    <section class="kpi-grid">
+      <div class="kpi"><span>Phone</span><strong>{{ profile.phone }}</strong></div>
+      <div class="kpi"><span>National ID</span><strong>{{ profile.nid }}</strong></div>
+      <div class="kpi"><span>M-Pesa</span><strong>{{ profile.m_pesa }}</strong></div>
+      <div class="kpi"><span>Reports</span><strong>{{ profile.reports }}</strong></div>
+    </section>
+
+    <section class="dashboard-grid">
+      <article class="card" id="profile">
+        <div class="panel-label">Profile summary</div>
+        <p>Keep your details accurate so admins can verify them faster.</p>
+      </article>
+      <article class="card" id="documents">
+        <div class="panel-label">Verification checklist</div>
+        <ul class="checklist">
+          {% for item in documents %}
+          <li>{{ item }}</li>
+          {% endfor %}
+        </ul>
+      </article>
+    </section>
+
+    <section class="section" id="activity">
+      <div class="card">
+        <div class="panel-label">Recent activity</div>
+        <div class="timeline">
+          <div class="timeline-item">
+            <span class="timeline-date">Today</span>
+            <p>Profile visible in the dashboard.</p>
+          </div>
+          <div class="timeline-item">
+            <span class="timeline-date">Pending</span>
+            <p>Waiting for admin review or document checks.</p>
+          </div>
+        </div>
       </div>
-      <div class="timeline-item">
-        <span class="timeline-date">2026-06-21</span>
-        <p>Admin requested clearer property ownership proof.</p>
-      </div>
-      <div class="timeline-item">
-        <span class="timeline-date">2026-06-23</span>
-        <p>Profile waiting for approval.</p>
-      </div>
-    </div>
+    </section>
   </div>
 </section>
 {% endblock %}
