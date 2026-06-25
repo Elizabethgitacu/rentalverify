@@ -7,40 +7,52 @@
   <p>Submit your details for verification by the administrator.</p>
 </section>
 
-<section class="card form-card">
-  <form class="form-grid">
-    <label>
-      Full name
-      <input type="text" value="Muriuki Property Services">
-    </label>
-    <label>
-      Email
-      <input type="email" value="landlord@example.com">
-    </label>
-    <label>
-      Phone number
-      <input type="text" value="0712 456 789">
-    </label>
-    <label>
-      National ID
-      <input type="text" value="2714 8891 2456">
-    </label>
-    <label>
-      M-Pesa number
-      <input type="text" value="254712456789">
-    </label>
-    <label class="full">
-      Property location
-      <input type="text" value="Kilimani, Nairobi">
-    </label>
-    <label class="full">
-      Ownership notes
-      <textarea rows="4">Registered owner, currently managing two apartments on Ring Road.</textarea>
-    </label>
-    <div class="button-row full">
-      <a class="btn btn-primary" href="/landlord/dashboard">Submit for review</a>
-      <a class="btn btn-secondary" href="/landlord/login">Already registered</a>
-    </div>
-  </form>
+<section class="search-layout">
+  <section class="card form-card">
+    <div class="panel-label">Registration details</div>
+    <form class="form-grid" method="post" action="/landlord/register">
+      <label>
+        Full name
+        <input type="text" name="full_name" value="Muriuki Property Services">
+      </label>
+      <label>
+        Email
+        <input type="email" name="email" value="landlord@example.com">
+      </label>
+      <label>
+        Phone number
+        <input type="text" name="phone_number" value="0712 456 789">
+      </label>
+      <label>
+        National ID
+        <input type="text" name="national_id_number" value="2714 8891 2456">
+      </label>
+      <label>
+        M-Pesa number
+        <input type="text" name="m_pesa_number" value="254712456789">
+      </label>
+      <label class="full">
+        Property location
+        <input type="text" name="property_location" value="Kilimani, Nairobi">
+      </label>
+      <label class="full">
+        Ownership notes
+        <textarea name="ownership_notes" rows="4">Registered owner, currently managing two apartments on Ring Road.</textarea>
+      </label>
+      <div class="button-row full">
+        <button class="btn btn-primary" type="submit">Submit for review</button>
+        <a class="btn btn-secondary" href="/landlord/login">Already registered</a>
+      </div>
+    </form>
+  </section>
+
+  <aside class="note-box search-note">
+    <h3>What admin checks</h3>
+    <ul class="plain-list">
+      <li>Identity document details must match the registration.</li>
+      <li>Property and contact information should be consistent.</li>
+      <li>Rejected entries can be corrected and resubmitted.</li>
+    </ul>
+  </aside>
 </section>
 {% endblock %}

@@ -7,31 +7,42 @@
   <p>Use any known identifier to check whether the landlord has a verification record or scam history.</p>
 </section>
 
-<section class="card form-card">
-  <form class="form-grid">
-    <label>
-      Search term
-      <input type="text" placeholder="Phone, NID, name, or M-Pesa number" value="0712 456 789">
-    </label>
-    <label>
-      Search type
-      <select>
-        <option>Any</option>
-        <option>Phone number</option>
-        <option>National ID</option>
-        <option>Name</option>
-        <option>M-Pesa number</option>
-      </select>
-    </label>
-    <label class="full">
-      Location
-      <input type="text" placeholder="Optional area or estate" value="Kilimani">
-    </label>
-    <div class="button-row full">
-      <a class="btn btn-primary" href="/search/result">Run search</a>
-      <a class="btn btn-secondary" href="/report">Report a scam instead</a>
-    </div>
-  </form>
+<section class="search-layout">
+  <section class="card form-card">
+    <form class="form-grid" method="post" action="/search">
+      <label>
+        Search term
+        <input type="text" name="search_term" placeholder="Phone, NID, name, or M-Pesa number" value="0712 456 789">
+      </label>
+      <label>
+        Search type
+        <select name="search_type">
+          <option>Any</option>
+          <option>Phone number</option>
+          <option>National ID</option>
+          <option>Name</option>
+          <option>M-Pesa number</option>
+        </select>
+      </label>
+      <label class="full">
+        Location
+        <input type="text" name="location" placeholder="Optional area or estate" value="Kilimani">
+      </label>
+      <div class="button-row full">
+        <button class="btn btn-primary" type="submit">Run search</button>
+        <a class="btn btn-secondary" href="/report">Report a scam instead</a>
+      </div>
+    </form>
+  </section>
+
+  <aside class="note-box search-note">
+    <h3>What to look for</h3>
+    <ul class="plain-list">
+      <li>Verified means the landlord has passed admin review.</li>
+      <li>Reported means multiple complaints exist.</li>
+      <li>Not Found means the system has no record yet.</li>
+    </ul>
+  </aside>
 </section>
 
 <section class="section">

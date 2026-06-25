@@ -7,44 +7,56 @@
   <p>Use this form when a landlord, agent, or listing looks suspicious.</p>
 </section>
 
-<section class="card form-card">
-  <form class="form-grid">
-    <label>
-      Your name
-      <input type="text" value="Amina Wanjiku">
-    </label>
-    <label>
-      Your phone
-      <input type="text" value="0711 222 333">
-    </label>
-    <label>
-      Landlord name
-      <input type="text" value="Muriuki Property Services">
-    </label>
-    <label>
-      Landlord phone
-      <input type="text" value="0712 456 789">
-    </label>
-    <label>
-      National ID
-      <input type="text" value="2714 8891 2456">
-    </label>
-    <label>
-      M-Pesa number
-      <input type="text" value="254712456789">
-    </label>
-    <label class="full">
-      Property address
-      <input type="text" value="Kilimani, Nairobi">
-    </label>
-    <label class="full">
-      Description
-      <textarea rows="5">The person requested a deposit before viewing the house and became unreachable afterwards.</textarea>
-    </label>
-    <div class="button-row full">
-      <a class="btn btn-primary" href="/report/confirmation">Submit report</a>
-      <a class="btn btn-secondary" href="/search">Back to search</a>
-    </div>
-  </form>
+<section class="search-layout">
+  <section class="card form-card">
+    <div class="panel-label">Incident details</div>
+    <form class="form-grid" method="post" action="/report">
+      <label>
+        Your name
+        <input type="text" name="reporter_name" value="Amina Wanjiku">
+      </label>
+      <label>
+        Your phone
+        <input type="text" name="reporter_phone" value="0711 222 333">
+      </label>
+      <label>
+        Landlord name
+        <input type="text" name="landlord_name" value="Muriuki Property Services">
+      </label>
+      <label>
+        Landlord phone
+        <input type="text" name="landlord_phone" value="0712 456 789">
+      </label>
+      <label>
+        National ID
+        <input type="text" name="national_id_number" value="2714 8891 2456">
+      </label>
+      <label>
+        M-Pesa number
+        <input type="text" name="m_pesa_number" value="254712456789">
+      </label>
+      <label class="full">
+        Property address
+        <input type="text" name="property_address" value="Kilimani, Nairobi">
+      </label>
+      <label class="full">
+        Description
+        <textarea name="description" rows="5">The person requested a deposit before viewing the house and became unreachable afterwards.</textarea>
+      </label>
+      <div class="button-row full">
+        <button class="btn btn-primary" type="submit">Submit report</button>
+        <a class="btn btn-secondary" href="/search">Back to search</a>
+      </div>
+    </form>
+  </section>
+
+  <aside class="note-box search-note">
+    <h3>Before you submit</h3>
+    <ul class="plain-list">
+      <li>Include the exact phone number used during the conversation.</li>
+      <li>Attach the property area and payment reference if available.</li>
+      <li>Use the report to support admin review and escalation.</li>
+    </ul>
+  </aside>
 </section>
 {% endblock %}

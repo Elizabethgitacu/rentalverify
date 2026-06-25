@@ -1,26 +1,48 @@
 {% extends "base.html" %}
 {% block title %}Admin Login - RentalVerify{% endblock %}
 {% block content %}
-<section class="page-head">
-  <span class="eyebrow">Administrator access</span>
-  <h1>Admin login</h1>
-  <p>Restricted access for landlord review, scam moderation, and analytics.</p>
-</section>
-
-<section class="card auth-card">
-  <form class="form-grid">
-    <label class="full">
-      Username
-      <input type="text" value="admin@rentalverify.ke">
-    </label>
-    <label class="full">
-      Password
-      <input type="password" value="admin-password">
-    </label>
-    <div class="button-row full">
-      <a class="btn btn-primary" href="/admin/dashboard">Sign in</a>
-      <a class="btn btn-secondary" href="/">Back home</a>
+<section class="auth-shell">
+  <aside class="auth-rail auth-rail-admin">
+    <span class="eyebrow">Administrator access</span>
+    <h1>Admin login</h1>
+    <p>
+      Manage landlord approvals, review scam reports, and monitor platform activity from one console.
+    </p>
+    <div class="auth-points">
+      <div>
+        <strong>Approval queue</strong>
+        <span>Review landlord submissions and document checks.</span>
+      </div>
+      <div>
+        <strong>Fraud control</strong>
+        <span>Escalate suspicious reports and keep an audit trail.</span>
+      </div>
+      <div>
+        <strong>Platform metrics</strong>
+        <span>Track searches, reports, and verification outcomes.</span>
+      </div>
     </div>
-  </form>
+  </aside>
+
+  <section class="card auth-card">
+    <div class="panel-label">Restricted sign in</div>
+    {% if error %}
+    <div class="form-alert">{{ error }}</div>
+    {% endif %}
+    <form class="form-grid" method="post" action="/admin/login">
+      <label class="full">
+        Username
+        <input type="text" name="email" value="admin@rentalverify.ke">
+      </label>
+      <label class="full">
+        Password
+        <input type="password" name="password" value="admin-password">
+      </label>
+      <div class="button-row full">
+        <button class="btn btn-primary" type="submit">Sign in</button>
+        <a class="btn btn-secondary" href="/">Back home</a>
+      </div>
+    </form>
+  </section>
 </section>
 {% endblock %}

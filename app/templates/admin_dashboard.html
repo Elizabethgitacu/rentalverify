@@ -14,17 +14,19 @@
   <div class="kpi"><span>Verified this week</span><strong>{{ stats.verified_this_week }}</strong></div>
 </section>
 
-<section class="dashboard-grid">
-  <article class="card">
-    <h2>Alerts</h2>
-    <ul class="plain-list">
+<section class="dashboard-grid admin-grid">
+  <article class="card accent-card">
+    <div class="panel-label">Priority alerts</div>
+    <h2>Today’s queue</h2>
+    <ul class="plain-list tight-list">
       {% for alert in alerts %}
       <li>{{ alert }}</li>
       {% endfor %}
     </ul>
   </article>
-  <article class="card">
-    <h2>Quick actions</h2>
+  <article class="card accent-card soft">
+    <div class="panel-label">Quick actions</div>
+    <h2>Operations shortcuts</h2>
     <div class="stack">
       <a class="btn btn-primary" href="/admin/landlords">Review registrations</a>
       <a class="btn btn-secondary" href="/admin/reports">Review reports</a>

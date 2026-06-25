@@ -1,26 +1,48 @@
 {% extends "base.html" %}
 {% block title %}Landlord Login - RentalVerify{% endblock %}
 {% block content %}
-<section class="page-head">
-  <span class="eyebrow">Landlord access</span>
-  <h1>Landlord login</h1>
-  <p>Use your credentials to view verification status and profile updates.</p>
-</section>
-
-<section class="card auth-card">
-  <form class="form-grid">
-    <label class="full">
-      Email
-      <input type="email" value="landlord@example.com">
-    </label>
-    <label class="full">
-      Password
-      <input type="password" value="password123">
-    </label>
-    <div class="button-row full">
-      <a class="btn btn-primary" href="/landlord/dashboard">Sign in</a>
-      <a class="btn btn-secondary" href="/landlord/register">Create account</a>
+<section class="auth-shell">
+  <aside class="auth-rail">
+    <span class="eyebrow">Landlord access</span>
+    <h1>Landlord login</h1>
+    <p>
+      View your verification status, update profile details, and respond to admin review requests.
+    </p>
+    <div class="auth-points">
+      <div>
+        <strong>Profile status</strong>
+        <span>See whether your record is pending, verified, or rejected.</span>
+      </div>
+      <div>
+        <strong>Secure access</strong>
+        <span>Keep your account protected with password-based login.</span>
+      </div>
+      <div>
+        <strong>Action center</strong>
+        <span>Update registration details and upload supporting documents.</span>
+      </div>
     </div>
-  </form>
+  </aside>
+
+  <section class="card auth-card">
+    <div class="panel-label">Sign in</div>
+    {% if error %}
+    <div class="form-alert">{{ error }}</div>
+    {% endif %}
+    <form class="form-grid" method="post" action="/landlord/login">
+      <label class="full">
+        Email
+        <input type="email" name="email" value="landlord@example.com">
+      </label>
+      <label class="full">
+        Password
+        <input type="password" name="password" value="password123">
+      </label>
+      <div class="button-row full">
+        <button class="btn btn-primary" type="submit">Sign in</button>
+        <a class="btn btn-secondary" href="/landlord/register">Create account</a>
+      </div>
+    </form>
+  </section>
 </section>
 {% endblock %}

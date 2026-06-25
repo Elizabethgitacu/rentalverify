@@ -10,7 +10,8 @@
 <div class="stack">
   {% for report in reports %}
   <article class="card report-row">
-    <div>
+    <div class="report-main">
+      <div class="panel-label">Case reference</div>
       <h2>{{ report.landlord }}</h2>
       <p>{{ report.ref }} - {{ report.date }}</p>
     </div>
@@ -18,7 +19,7 @@
       <span class="status {{ report.status|lower|replace(' ', '-') }}">{{ report.status }}</span>
       <span class="tag">{{ report.risk }} risk</span>
     </div>
-    <div class="button-row">
+    <div class="button-row report-actions">
       <a class="btn btn-primary" href="#">Escalate</a>
       <a class="btn btn-secondary" href="#">Close</a>
     </div>

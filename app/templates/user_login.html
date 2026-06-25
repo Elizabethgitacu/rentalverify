@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}User Login - RentalVerify{% endblock %}
+{% block content %}
+<section class="auth-shell">
+  <aside class="auth-rail">
+    <span class="eyebrow">Customer access</span>
+    <h1>User login</h1>
+    <p>
+      Log in to track your scam reports, follow up on submissions, and view saved landlord checks.
+    </p>
+    <div class="auth-points">
+      <div>
+        <strong>Report tracking</strong>
+        <span>See the status of reports you have submitted.</span>
+      </div>
+      <div>
+        <strong>Search history</strong>
+        <span>Review previous landlord checks and important notes.</span>
+      </div>
+      <div>
+        <strong>Simple access</strong>
+        <span>This is for renters and other external users, not admins.</span>
+      </div>
+    </div>
+  </aside>
+
+  <section class="card auth-card">
+    <div class="panel-label">Sign in</div>
+    {% if error %}
+    <div class="form-alert">{{ error }}</div>
+    {% endif %}
+    <form class="form-grid" method="post" action="/user/login">
+      <label class="full">
+        Email or phone
+        <input type="text" name="email" value="amina@example.com">
+      </label>
+      <label class="full">
+        Password
+        <input type="password" name="password" value="password123">
+      </label>
+      <div class="button-row full">
+        <button class="btn btn-primary" type="submit">Sign in</button>
+        <a class="btn btn-secondary" href="/report">Continue without account</a>
+      </div>
+    </form>
+  </section>
+</section>
+{% endblock %}

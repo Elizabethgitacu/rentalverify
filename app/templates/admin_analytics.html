@@ -16,9 +16,10 @@
   {% endfor %}
 </section>
 
-<section class="dashboard-grid">
-  <article class="card">
-    <h2>Weekly trend</h2>
+<section class="dashboard-grid admin-grid">
+  <article class="card accent-card">
+    <div class="panel-label">Weekly trend</div>
+    <h2>Activity by module</h2>
     <div class="bars">
       {% for bar in bars %}
       <div class="bar-row">
@@ -29,9 +30,10 @@
       {% endfor %}
     </div>
   </article>
-  <article class="card">
-    <h2>Notes</h2>
-    <ul class="plain-list">
+  <article class="card accent-card soft">
+    <div class="panel-label">Notes</div>
+    <h2>Operational reminders</h2>
+    <ul class="plain-list tight-list">
       <li>Searches are public and do not require login.</li>
       <li>Reports feed the admin review queue.</li>
       <li>Verified landlords appear in public search results.</li>

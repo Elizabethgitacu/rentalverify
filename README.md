@@ -1,13 +1,23 @@
 # rentalverify
 
-Prototype pages for RentalVerify are now available under `app/`.
-
-This is placeholder UI only. The forms do not submit to a backend yet.
+RentalVerify now has:
+- server-rendered pages
+- form handling
+- session-based login flows
+- raw PostgreSQL schema files
+- a simple SQL migration runner
 
 ## Run locally
 
 ```powershell
+pip install -r requirements.txt
 uvicorn app.main:app --reload
+```
+
+If you are using PostgreSQL, set `DATABASE_URL` first, then run:
+
+```powershell
+python -m app.db.migrate
 ```
 
 ## Pages
@@ -19,8 +29,10 @@ uvicorn app.main:app --reload
 - `/report/confirmation`
 - `/landlord/register`
 - `/landlord/login`
+- `/user/login`
 - `/landlord/dashboard`
 - `/admin/login`
+- `/admin/access`
 - `/admin/dashboard`
 - `/admin/landlords`
 - `/admin/reports`

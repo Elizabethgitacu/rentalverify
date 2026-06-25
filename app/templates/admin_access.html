@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Admin Access - RentalVerify{% endblock %}
+{% block content %}
+<section class="page-head result-head">
+  <div>
+    <span class="eyebrow">Restricted access</span>
+    <h1>Administrator entry point</h1>
+    <p>This page is intentionally not linked in the public header.</p>
+  </div>
+  <div class="result-head-card">
+    <span>Route</span>
+    <strong>/admin/login</strong>
+    <p>Use this only when you are an approved administrator.</p>
+  </div>
+</section>
+
+<section class="search-layout">
+  <aside class="note-box search-note">
+    <h3>Access note</h3>
+    <ul class="plain-list">
+      <li>Admin access should stay out of the public navigation.</li>
+      <li>Use the direct route or bookmark it privately.</li>
+      <li>All admin actions remain logged after sign in.</li>
+    </ul>
+  </aside>
+  <div class="card action-card">
+    <div class="panel-label">Sign in</div>
+    <p>Proceed to the admin login screen using the button below.</p>
+    <div class="button-row">
+      <a class="btn btn-primary" href="/admin/login">Open admin login</a>
+      <a class="btn btn-secondary" href="/">Back home</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

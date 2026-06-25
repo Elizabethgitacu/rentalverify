@@ -18,13 +18,33 @@
         <a class="{% if active_page == 'search' %}active{% endif %}" href="/search">Search</a>
         <a class="{% if active_page == 'report' %}active{% endif %}" href="/report">Report</a>
         <a class="{% if active_page.startswith('landlord') %}active{% endif %}" href="/landlord/register">Landlord</a>
-        <a class="{% if active_page.startswith('admin') %}active{% endif %}" href="/admin/dashboard">Admin</a>
       </nav>
+      <div class="topbar-actions">
+        <a class="btn btn-secondary btn-sm" href="/user/login">User login</a>
+        <a class="btn btn-primary btn-sm" href="/landlord/login">Landlord login</a>
+      </div>
     </header>
 
     <main class="page">
       {% block content %}{% endblock %}
     </main>
+
+    <footer class="site-footer">
+      <div class="footer-brand">
+        <strong>RentalVerify</strong>
+        <p>Public landlord verification and rental scam intelligence for Kenya.</p>
+        <span>Do not use a not found result as proof of safety.</span>
+      </div>
+      <div class="footer-links">
+        <a href="/search">Search</a>
+        <a href="/report">Report</a>
+        <a href="/user/login">User login</a>
+        <a href="/landlord/login">Landlord login</a>
+      </div>
+      <div class="footer-note">
+        <span>External users first. Admin tools remain restricted.</span>
+      </div>
+    </footer>
   </div>
 </body>
 </html>

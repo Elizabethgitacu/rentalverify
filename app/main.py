@@ -1,13 +1,33 @@
+import os
 from pathlib import Path
 
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Form, Query, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.sessions import SessionMiddleware
+
+from app.storage import (
+    authenticate,
+    create_scam_report,
+    dashboard_stats,
+    demo_store,
+    homepage_stats,
+    log_search,
+    register_landlord,
+    search_landlord,
+    search_timeline,
+)
 
 
 BASE_DIR = Path(__file__).resolve().parent
-app = FastAPI(title="RentalVerify Prototype")
+app = FastAPI(title="RentalVerify")
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("RVERIFY_SECRET_KEY", "dev-secret-change-me"),
+    same_site="lax",
+    https_only=False,
+)
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
@@ -15,92 +35,42 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 def render(request: Request, template_name: str, **context):
     context.setdefault("request", request)
     context.setdefault("active_page", "")
+    context.setdefault("current_user", request.session.get("user"))
     return templates.TemplateResponse(request=request, name=template_name, context=context)
 
 
-sample_landlord = {
-    "name": "Muriuki Property Services",
-    "phone": "+254 712 456 789",
-    "nid": "2714 8891 2456",
-    "m_pesa": "254712456789",
-    "location": "Kilimani, Nairobi",
-    "status": "Verified",
-    "reports": 3,
-}
+def redirect(url: str) -> RedirectResponse:
+    return RedirectResponse(url=url, status_code=303)
 
-sample_reports = [
-    {
-        "ref": "RV-2026-0042",
-        "landlord": "Muriuki Property Services",
-        "status": "Open",
-        "risk": "High",
-        "date": "2026-06-18",
-    },
-    {
-        "ref": "RV-2026-0039",
-        "landlord": "Amani Rentals",
-        "status": "Under Review",
-        "risk": "Medium",
-        "date": "2026-06-15",
-    },
-    {
-        "ref": "RV-2026-0031",
-        "landlord": "Nairobi Homes Agency",
-        "status": "Escalated",
-        "risk": "High",
-        "date": "2026-06-10",
-    },
-]
 
-sample_pending_landlords = [
-    {
-        "name": "Muriuki Property Services",
-        "phone": "+254 712 456 789",
-        "location": "Kilimani",
-        "submitted": "2026-06-20",
-    },
-    {
-        "name": "Rongai Lettings",
-        "phone": "+254 733 000 445",
-        "location": "Langata",
-        "submitted": "2026-06-21",
-    },
-]
+def is_role(request: Request, role: str) -> bool:
+    user = request.session.get("user")
+    return bool(user and user.get("role") == role)
+
+
+def demo_landlord_profile() -> dict:
+    profile = demo_store.landlords[0].copy()
+    profile["status"] = "Pending Review"
+    return profile
 
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
     featured_landlords = [
         {
-            "name": "Muriuki Property Services",
-            "location": "Kilimani",
-            "badge": "Verified",
-            "reports": 3,
-        },
-        {
-            "name": "Lakeside Residences",
-            "location": "Kileleshwa",
-            "badge": "Verified",
-            "reports": 1,
-        },
-        {
-            "name": "Sunrise Court",
-            "location": "South B",
-            "badge": "Reported",
-            "reports": 7,
-        },
+            "name": landlord["name"],
+            "location": landlord["location"].split(",")[0],
+            "badge": landlord["status"],
+            "reports": landlord["reports"],
+        }
+        for landlord in demo_store.landlords
     ]
     return render(
         request,
         "home.html",
         active_page="home",
         featured_landlords=featured_landlords,
-        stats={
-            "searches": "14,820",
-            "reports": "1,246",
-            "verified": "382",
-            "resolved": "91%",
-        },
+        stats=homepage_stats(),
     )
 
 
@@ -119,18 +89,42 @@ def search_page(request: Request):
     )
 
 
-@app.get("/search/result", response_class=HTMLResponse)
-def search_result(request: Request):
+@app.post("/search", response_class=HTMLResponse)
+def search_submit(
+    request: Request,
+    search_term: str = Form(...),
+    search_type: str = Form("Any"),
+    location: str = Form(""),
+):
+    landlord = search_landlord(search_term)
+    log_search(
+        search_term=search_term,
+        search_type=search_type,
+        location=location,
+        result_status=landlord.get("status", "Unknown"),
+        matched_landlord_id=landlord.get("id"),
+    )
     return render(
         request,
         "search_result.html",
         active_page="search",
-        landlord=sample_landlord,
-        report_timeline=[
-            {"date": "2026-06-12", "note": "First report submitted"},
-            {"date": "2026-06-15", "note": "Admin review started"},
-            {"date": "2026-06-18", "note": "Status marked high risk"},
-        ],
+        landlord=landlord,
+        search_term=search_term,
+        search_type=search_type,
+        location=location,
+        report_timeline=search_timeline(),
+    )
+
+
+@app.get("/search/result", response_class=HTMLResponse)
+def search_result(request: Request):
+    landlord = demo_store.landlords[0].copy()
+    return render(
+        request,
+        "search_result.html",
+        active_page="search",
+        landlord=landlord,
+        report_timeline=search_timeline(),
     )
 
 
@@ -143,23 +137,85 @@ def report_page(request: Request):
     )
 
 
+@app.post("/report", response_class=HTMLResponse)
+def report_submit(
+    request: Request,
+    reporter_name: str = Form(...),
+    reporter_phone: str = Form(...),
+    landlord_name: str = Form(...),
+    landlord_phone: str = Form(...),
+    national_id_number: str = Form(...),
+    m_pesa_number: str = Form(...),
+    property_address: str = Form(...),
+    description: str = Form(...),
+):
+    reference = create_scam_report(
+        {
+            "reporter_name": reporter_name,
+            "reporter_phone": reporter_phone,
+            "landlord_name": landlord_name,
+            "landlord_phone": landlord_phone,
+            "national_id_number": national_id_number,
+            "m_pesa_number": m_pesa_number,
+            "property_address": property_address,
+            "description": description,
+        }
+    )
+    return redirect(f"/report/confirmation?reference={reference}")
+
+
 @app.get("/report/confirmation", response_class=HTMLResponse)
-def report_confirmation(request: Request):
+def report_confirmation(request: Request, reference: str = Query(default="RV-2026-0042")):
     return render(
         request,
         "report_confirmation.html",
         active_page="report",
-        reference="RV-2026-0042",
+        reference=reference,
     )
 
 
 @app.get("/landlord/register", response_class=HTMLResponse)
-def landlord_register(request: Request):
+def landlord_register_page(request: Request):
     return render(
         request,
         "landlord_register.html",
         active_page="landlord_register",
     )
+
+
+@app.post("/landlord/register", response_class=HTMLResponse)
+def landlord_register_submit(
+    request: Request,
+    full_name: str = Form(...),
+    email: str = Form(...),
+    phone_number: str = Form(...),
+    national_id_number: str = Form(...),
+    m_pesa_number: str = Form(...),
+    property_location: str = Form(...),
+    ownership_notes: str = Form(...),
+):
+    register_landlord(
+        {
+            "full_name": full_name,
+            "email": email,
+            "phone_number": phone_number,
+            "national_id_number": national_id_number,
+            "m_pesa_number": m_pesa_number,
+            "property_location": property_location,
+            "ownership_notes": ownership_notes,
+        }
+    )
+    request.session["user"] = {"role": "landlord", "name": full_name, "email": email}
+    request.session["landlord_profile"] = {
+        "name": full_name,
+        "phone": phone_number,
+        "nid": national_id_number,
+        "m_pesa": m_pesa_number,
+        "location": property_location,
+        "status": "Pending Review",
+        "reports": 0,
+    }
+    return redirect("/landlord/dashboard")
 
 
 @app.get("/landlord/login", response_class=HTMLResponse)
@@ -171,13 +227,60 @@ def landlord_login(request: Request):
     )
 
 
+@app.post("/landlord/login", response_class=HTMLResponse)
+def landlord_login_submit(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+):
+    if authenticate(email, password, "landlord"):
+        request.session["user"] = {"role": "landlord", "email": email, "name": "Landlord"}
+        request.session.setdefault("landlord_profile", demo_landlord_profile())
+        return redirect("/landlord/dashboard")
+    return render(
+        request,
+        "landlord_login.html",
+        active_page="landlord_login",
+        error="Invalid landlord credentials.",
+    )
+
+
+@app.get("/user/login", response_class=HTMLResponse)
+def user_login(request: Request):
+    return render(
+        request,
+        "user_login.html",
+        active_page="user_login",
+    )
+
+
+@app.post("/user/login", response_class=HTMLResponse)
+def user_login_submit(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+):
+    if authenticate(email, password, "user"):
+        request.session["user"] = {"role": "user", "email": email, "name": "User"}
+        return redirect("/search")
+    return render(
+        request,
+        "user_login.html",
+        active_page="user_login",
+        error="Invalid user credentials.",
+    )
+
+
 @app.get("/landlord/dashboard", response_class=HTMLResponse)
 def landlord_dashboard(request: Request):
+    if not is_role(request, "landlord"):
+        return redirect("/landlord/login")
+    profile = request.session.get("landlord_profile") or demo_landlord_profile()
     return render(
         request,
         "landlord_dashboard.html",
         active_page="landlord_dashboard",
-        profile=sample_landlord,
+        profile=profile,
         documents=[
             "National ID copy",
             "Property ownership document",
@@ -196,48 +299,75 @@ def admin_login(request: Request):
     )
 
 
+@app.post("/admin/login", response_class=HTMLResponse)
+def admin_login_submit(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+):
+    if authenticate(email, password, "admin"):
+        request.session["user"] = {"role": "admin", "email": email, "name": "Admin"}
+        return redirect("/admin/dashboard")
+    return render(
+        request,
+        "admin_login.html",
+        active_page="admin_login",
+        error="Invalid administrator credentials.",
+    )
+
+
+@app.get("/admin/access", response_class=HTMLResponse)
+def admin_access(request: Request):
+    return render(request, "admin_access.html", active_page="admin_access")
+
+
 @app.get("/admin/dashboard", response_class=HTMLResponse)
 def admin_dashboard(request: Request):
+    if not is_role(request, "admin"):
+        return redirect("/admin/login")
+    stats = dashboard_stats()
     return render(
         request,
         "admin_dashboard.html",
         active_page="admin_dashboard",
-        stats={
-            "pending": 12,
-            "open_reports": 8,
-            "escalated": 4,
-            "verified_this_week": 9,
-        },
+        stats=stats,
         alerts=[
-            "3 new high-risk reports need review",
-            "2 landlord submissions are missing ID documents",
-            "1 report has crossed escalation threshold",
+            f"{stats['pending']} landlord submissions need review",
+            f"{stats['open_reports']} scam reports are open",
+            f"{stats['escalated']} reports have been escalated",
         ],
     )
 
 
 @app.get("/admin/landlords", response_class=HTMLResponse)
 def admin_registration_review(request: Request):
+    if not is_role(request, "admin"):
+        return redirect("/admin/login")
     return render(
         request,
         "admin_registration_review.html",
         active_page="admin_landlords",
-        pending_landlords=sample_pending_landlords,
+        pending_landlords=[item.copy() for item in demo_store.pending_landlords],
     )
 
 
 @app.get("/admin/reports", response_class=HTMLResponse)
 def admin_report_review(request: Request):
+    if not is_role(request, "admin"):
+        return redirect("/admin/login")
     return render(
         request,
         "admin_report_review.html",
         active_page="admin_reports",
-        reports=sample_reports,
+        reports=[item.copy() for item in demo_store.reports],
     )
 
 
 @app.get("/admin/analytics", response_class=HTMLResponse)
 def admin_analytics(request: Request):
+    if not is_role(request, "admin"):
+        return redirect("/admin/login")
+    stats = dashboard_stats()
     return render(
         request,
         "admin_analytics.html",
@@ -255,9 +385,16 @@ def admin_analytics(request: Request):
             {"label": "Escalations", "value": 41},
             {"label": "Resolved", "value": 88},
         ],
+        stats=stats,
     )
+
+
+@app.get("/logout")
+def logout(request: Request):
+    request.session.clear()
+    return redirect("/")
 
 
 @app.get("/404", response_class=HTMLResponse, status_code=404)
 def not_found(request: Request):
-    return render(request, "error_404.html", active_page=""),
+    return render(request, "error_404.html", active_page="")

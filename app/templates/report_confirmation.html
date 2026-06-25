@@ -1,18 +1,37 @@
 {% extends "base.html" %}
 {% block title %}Report Confirmation - RentalVerify{% endblock %}
 {% block content %}
-<section class="page-head">
-  <span class="eyebrow">Confirmation</span>
-  <h1>Report submitted successfully</h1>
-  <p>Your report reference number is {{ reference }}.</p>
+<section class="page-head result-head">
+  <div>
+    <span class="eyebrow">Confirmation</span>
+    <h1>Report submitted successfully</h1>
+    <p>Your report reference number is {{ reference }}.</p>
+  </div>
+  <div class="result-head-card">
+    <span>Status</span>
+    <strong>Queued</strong>
+    <p>The report has been stored and is waiting for admin review.</p>
+  </div>
 </section>
 
-<section class="card confirmation-card">
-  <div class="big-ref">{{ reference }}</div>
-  <p>The report has been stored and queued for admin review.</p>
-  <div class="button-row">
-    <a class="btn btn-primary" href="/search">Search another landlord</a>
-    <a class="btn btn-secondary" href="/admin/reports">View admin report queue</a>
-  </div>
+<section class="result-grid">
+  <section class="card confirmation-card accent-card">
+    <div class="panel-label">Reference number</div>
+    <div class="big-ref">{{ reference }}</div>
+    <p>The report has been stored and queued for admin review.</p>
+    <div class="button-row">
+      <a class="btn btn-primary" href="/search">Search another landlord</a>
+      <a class="btn btn-secondary" href="/report">Submit another report</a>
+    </div>
+  </section>
+
+  <aside class="note-box search-note">
+    <h3>What happens next</h3>
+    <ul class="plain-list">
+      <li>An admin can review the submission.</li>
+      <li>Repeated reports may increase risk status.</li>
+      <li>You can use the reference number for follow-up.</li>
+    </ul>
+  </aside>
 </section>
 {% endblock %}

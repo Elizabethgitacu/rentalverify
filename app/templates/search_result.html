@@ -1,17 +1,24 @@
 {% extends "base.html" %}
 {% block title %}Search Result - RentalVerify{% endblock %}
 {% block content %}
-<section class="page-head">
-  <span class="eyebrow">Search result</span>
-  <h1>{{ landlord.name }}</h1>
-  <p>{{ landlord.location }} - {{ landlord.phone }}</p>
+<section class="page-head result-head">
+  <div>
+    <span class="eyebrow">Search result</span>
+    <h1>{{ landlord.name }}</h1>
+    <p>{{ landlord.location }} - {{ landlord.phone }}</p>
+  </div>
+  <div class="result-head-card">
+    <span>Verification status</span>
+    <strong>{{ landlord.status }}</strong>
+    <p>High confidence match based on current records.</p>
+  </div>
 </section>
 
 <section class="result-grid">
-  <article class="card result-card">
+  <article class="card result-card accent-card">
     <div class="result-top">
       <span class="status verified">{{ landlord.status }}</span>
-      <strong class="risk-score">High confidence match</strong>
+      <strong class="risk-score">Risk summary</strong>
     </div>
     <div class="detail-grid">
       <div><span>National ID</span><strong>{{ landlord.nid }}</strong></div>
@@ -24,8 +31,9 @@
     </div>
   </article>
 
-  <article class="card">
-    <h2>Report timeline</h2>
+  <article class="card accent-card soft">
+    <div class="panel-label">Report timeline</div>
+    <h2>Recent activity</h2>
     <div class="timeline">
       {% for item in report_timeline %}
       <div class="timeline-item">
@@ -37,10 +45,24 @@
   </article>
 </section>
 
-<section class="section">
-  <div class="button-row">
-    <a class="btn btn-primary" href="/report">Submit report</a>
-    <a class="btn btn-secondary" href="/search">New search</a>
+<section class="search-layout result-actions">
+  <aside class="note-box search-note">
+    <h3>Interpretation</h3>
+    <ul class="plain-list">
+      <li>Verified means admin review has confirmed the profile.</li>
+      <li>Reported means one or more scams have been logged.</li>
+      <li>Not Found means there is not enough data yet.</li>
+    </ul>
+  </aside>
+
+  <div class="card action-card">
+    <div class="panel-label">Next step</div>
+    <h2>What do you want to do now?</h2>
+    <p>You can submit a report if something looks suspicious, or run another search.</p>
+    <div class="button-row">
+      <a class="btn btn-primary" href="/report">Submit report</a>
+      <a class="btn btn-secondary" href="/search">New search</a>
+    </div>
   </div>
 </section>
 {% endblock %}
