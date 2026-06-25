@@ -33,7 +33,20 @@
           <td>{{ item.phone }}</td>
           <td>{{ item.location }}</td>
           <td>{{ item.submitted }}</td>
-          <td><span class="status pending">Pending</span></td>
+          <td>
+            <div class="row-actions">
+              <span class="status pending">Pending</span>
+              <div class="row-action-stack">
+                <form method="post" action="/admin/landlords/{{ item.id }}/approve">
+                  <button class="btn btn-primary btn-sm" type="submit">Approve</button>
+                </form>
+                <form method="post" action="/admin/landlords/{{ item.id }}/reject">
+                  <input type="hidden" name="reason" value="Rejected during review">
+                  <button class="btn btn-secondary btn-sm" type="submit">Reject</button>
+                </form>
+              </div>
+            </div>
+          </td>
         </tr>
         {% endfor %}
       </tbody>

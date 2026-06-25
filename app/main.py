@@ -8,12 +8,18 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.storage import (
+    approve_landlord,
     authenticate,
     create_scam_report,
     dashboard_stats,
     demo_store,
     homepage_stats,
+    close_report,
+    escalate_report,
+    get_pending_landlords,
+    get_reports,
     log_search,
+    reject_landlord,
     register_landlord,
     search_landlord,
     search_timeline,
@@ -347,7 +353,7 @@ def admin_registration_review(request: Request):
         request,
         "admin_registration_review.html",
         active_page="admin_landlords",
-        pending_landlords=[item.copy() for item in demo_store.pending_landlords],
+        pending_landlords=get_pending_landlords(),
     )
 
 
@@ -359,7 +365,7 @@ def admin_report_review(request: Request):
         request,
         "admin_report_review.html",
         active_page="admin_reports",
-        reports=[item.copy() for item in demo_store.reports],
+        reports=get_reports(),
     )
 
 
@@ -393,6 +399,38 @@ def admin_analytics(request: Request):
 def logout(request: Request):
     request.session.clear()
     return redirect("/")
+
+
+@app.post("/admin/landlords/{landlord_id}/approve")
+def admin_landlord_approve(request: Request, landlord_id: int):
+    if not is_role(request, "admin"):
+        return redirect("/admin/login")
+    approve_landlord(landlord_id, actor_user_id=None)
+    return redirect("/admin/landlords")
+
+
+@app.post("/admin/landlords/{landlord_id}/reject")
+def admin_landlord_reject(request: Request, landlord_id: int, reason: str = Form("")):
+    if not is_role(request, "admin"):
+        return redirect("/admin/login")
+    reject_landlord(landlord_id, reason=reason, actor_user_id=None)
+    return redirect("/admin/landlords")
+
+
+@app.post("/admin/reports/{report_id}/escalate")
+def admin_report_escalate(request: Request, report_id: int):
+    if not is_role(request, "admin"):
+        return redirect("/admin/login")
+    escalate_report(report_id, actor_user_id=None)
+    return redirect("/admin/reports")
+
+
+@app.post("/admin/reports/{report_id}/close")
+def admin_report_close(request: Request, report_id: int):
+    if not is_role(request, "admin"):
+        return redirect("/admin/login")
+    close_report(report_id, actor_user_id=None)
+    return redirect("/admin/reports")
 
 
 @app.get("/404", response_class=HTMLResponse, status_code=404)

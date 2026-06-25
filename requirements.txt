@@ -1,5 +1,5 @@
 fastapi
 uvicorn[standard]
 jinja2
-psycopg[binary]
-passlib[bcrypt]
+python-multipart
+itsdangerous

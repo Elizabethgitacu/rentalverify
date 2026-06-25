@@ -780,6 +780,23 @@ th {
   justify-content: flex-end;
 }
 
+.report-actions form,
+.row-action-stack form {
+  margin: 0;
+}
+
+.row-actions {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+}
+
+.row-action-stack {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .admin-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -853,6 +870,10 @@ th {
   .report-meta,
   .report-actions {
     justify-content: flex-start;
+  }
+
+  .row-actions {
+    justify-items: start;
   }
 
   .site-footer {

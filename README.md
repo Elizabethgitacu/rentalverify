@@ -4,21 +4,18 @@ RentalVerify now has:
 - server-rendered pages
 - form handling
 - session-based login flows
-- raw PostgreSQL schema files
-- a simple SQL migration runner
+- SQLite-backed storage
+- a simple database init runner
 
 ## Run locally
 
 ```powershell
 pip install -r requirements.txt
+python -m app.db.migrate
 uvicorn app.main:app --reload
 ```
 
-If you are using PostgreSQL, set `DATABASE_URL` first, then run:
-
-```powershell
-python -m app.db.migrate
-```
+The SQLite database file is created automatically at `rentalverify.sqlite3`.
 
 ## Pages
 
@@ -38,3 +35,4 @@ python -m app.db.migrate
 - `/admin/reports`
 - `/admin/analytics`
 - `/404`
+

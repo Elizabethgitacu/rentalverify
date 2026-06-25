@@ -1,19 +1,18 @@
 from __future__ import annotations
 
+import json
 import os
+import sqlite3
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import date, datetime
+from pathlib import Path
 from typing import Any, Iterator
 
-import psycopg
-from psycopg.rows import dict_row
-from passlib.context import CryptContext
 
 
-DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
-USE_DEMO_FALLBACK = os.getenv("RVERIFY_USE_DEMO_FALLBACK", "1").lower() not in {"0", "false", "no"}
-PWD_CONTEXT = CryptContext(schemes=["bcrypt"], deprecated="auto")
+ROOT_DIR = Path(__file__).resolve().parent.parent
+SQLITE_PATH = Path(os.getenv("RVERIFY_SQLITE_PATH", ROOT_DIR / "rentalverify.sqlite3"))
 
 
 def now_iso() -> str:
@@ -21,28 +20,29 @@ def now_iso() -> str:
 
 
 def new_reference() -> str:
-    return f"RV-{datetime.utcnow():%Y%m%d-%H%M%S}"
+    return f"RV-{datetime.utcnow():%Y%m%d-%H%M%S-%f}"
+
+
+def _connect() -> sqlite3.Connection:
+    SQLITE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(SQLITE_PATH)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
 
 
 @contextmanager
 def db_cursor() -> Iterator[Any]:
-    if DATABASE_URL:
-        conn = psycopg.connect(DATABASE_URL, row_factory=dict_row)
+    with _connect() as conn:
+        cur = conn.cursor()
         try:
-            with conn.cursor() as cur:
-                yield cur
+            yield cur
             conn.commit()
         except Exception:
             conn.rollback()
             raise
         finally:
-            conn.close()
-        return
-
-    if not USE_DEMO_FALLBACK:
-        raise RuntimeError("DATABASE_URL is not configured.")
-
-    raise RuntimeError("Demo fallback does not expose a SQL cursor.")
+            cur.close()
 
 
 @dataclass
@@ -50,6 +50,8 @@ class DemoStore:
     landlords: list[dict[str, Any]]
     reports: list[dict[str, Any]]
     pending_landlords: list[dict[str, Any]]
+    audit_logs: list[dict[str, Any]]
+    admin_actions: list[dict[str, Any]]
     users: list[dict[str, Any]]
     current_user: dict[str, Any] | None = None
 
@@ -83,7 +85,7 @@ demo_store = DemoStore(
             "nid": "4781 2210 7761",
             "m_pesa": "254711889012",
             "location": "South B, Nairobi",
-            "status": "Reported",
+            "status": "Verified",
             "reports": 7,
         },
     ],
@@ -129,16 +131,140 @@ demo_store = DemoStore(
             "submitted": "2026-06-21",
         },
     ],
+    audit_logs=[],
+    admin_actions=[],
     users=[
-        {"email": "amina@example.com", "password": "password123", "role": "user", "name": "Amina Wanjiku"},
-        {"email": "landlord@example.com", "password": "password123", "role": "landlord", "name": "Muriuki Property Services"},
-        {"email": "admin@rentalverify.ke", "password": "admin-password", "role": "admin", "name": "Admin"},
+        {
+            "email": "amina@example.com",
+            "password": "password123",
+            "role": "user",
+            "name": "Amina Wanjiku",
+        },
+        {
+            "email": "landlord@example.com",
+            "password": "password123",
+            "role": "landlord",
+            "name": "Muriuki Property Services",
+        },
+        {
+            "email": "admin@rentalverify.ke",
+            "password": "admin-password",
+            "role": "admin",
+            "name": "Admin",
+        },
     ],
 )
 
 
+SCHEMA_SQL = """
+CREATE TABLE IF NOT EXISTS schema_migrations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    filename TEXT NOT NULL UNIQUE,
+    applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    full_name TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    phone_number TEXT,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL CHECK (role IN ('user', 'landlord', 'admin')),
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS landlord_profiles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    full_name TEXT NOT NULL,
+    email TEXT,
+    phone_number TEXT NOT NULL,
+    national_id_number TEXT NOT NULL,
+    m_pesa_number TEXT NOT NULL,
+    property_location TEXT NOT NULL,
+    ownership_notes TEXT,
+    verification_status TEXT NOT NULL DEFAULT 'pending' CHECK (verification_status IN ('pending', 'verified', 'rejected')),
+    verified_at TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_landlord_profiles_phone_number ON landlord_profiles (phone_number);
+CREATE INDEX IF NOT EXISTS idx_landlord_profiles_national_id_number ON landlord_profiles (national_id_number);
+CREATE INDEX IF NOT EXISTS idx_landlord_profiles_m_pesa_number ON landlord_profiles (m_pesa_number);
+
+CREATE TABLE IF NOT EXISTS scam_reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    reporter_name TEXT NOT NULL,
+    reporter_phone TEXT NOT NULL,
+    landlord_name TEXT NOT NULL,
+    landlord_phone TEXT,
+    national_id_number TEXT,
+    m_pesa_number TEXT,
+    property_address TEXT NOT NULL,
+    description TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'under_review', 'escalated', 'closed')),
+    reference_number TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_scam_reports_status ON scam_reports (status);
+CREATE INDEX IF NOT EXISTS idx_scam_reports_reference_number ON scam_reports (reference_number);
+
+CREATE TABLE IF NOT EXISTS search_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    search_term TEXT NOT NULL,
+    search_type TEXT NOT NULL DEFAULT 'Any',
+    location TEXT,
+    result_status TEXT NOT NULL,
+    matched_landlord_id INTEGER REFERENCES landlord_profiles(id) ON DELETE SET NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS admin_actions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    admin_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    action_type TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    entity_id INTEGER,
+    notes TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    actor_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    action TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    entity_id INTEGER,
+    before_state TEXT,
+    after_state TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS landlord_documents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    landlord_profile_id INTEGER NOT NULL REFERENCES landlord_profiles(id) ON DELETE CASCADE,
+    document_type TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    uploaded_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+"""
+
+
 def _normalize_query(text: str) -> str:
     return " ".join(text.strip().lower().split())
+
+
+def _pretty_status(status: str) -> str:
+    return status.replace("_", " ").strip().title()
+
+
+def _pretty_report_status(status: str) -> str:
+    return _pretty_status(status)
 
 
 def _demo_find_landlord(search_term: str) -> dict[str, Any]:
@@ -176,39 +302,209 @@ def _demo_find_landlord(search_term: str) -> dict[str, Any]:
     }
 
 
+def _seed_data() -> None:
+    with _connect() as conn:
+        cur = conn.cursor()
+
+        cur.execute("SELECT COUNT(*) AS count FROM users")
+        if cur.fetchone()[0] == 0:
+            cur.executemany(
+                """
+                INSERT INTO users (full_name, email, phone_number, password_hash, role, is_active, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """,
+                [
+                    (
+                        item["name"],
+                        item["email"],
+                        "",
+                        item["password"],
+                        item["role"],
+                    )
+                    for item in demo_store.users
+                ],
+            )
+
+        cur.execute("SELECT COUNT(*) AS count FROM landlord_profiles")
+        if cur.fetchone()[0] == 0:
+            landlord_rows = [
+                (
+                    "Muriuki Property Services",
+                    "muriuki@example.com",
+                    "+254 712 456 789",
+                    "2714 8891 2456",
+                    "254712456789",
+                    "Kilimani, Nairobi",
+                    "Demo verification record",
+                    "verified",
+                ),
+                (
+                    "Lakeside Residences",
+                    "lakeside@example.com",
+                    "+254 733 500 900",
+                    "3891 5512 2240",
+                    "254733500900",
+                    "Kileleshwa, Nairobi",
+                    "Demo verification record",
+                    "verified",
+                ),
+                (
+                    "Sunrise Court",
+                    "sunrise@example.com",
+                    "+254 711 889 012",
+                    "4781 2210 7761",
+                    "254711889012",
+                    "South B, Nairobi",
+                    "Demo verification record",
+                    "verified",
+                ),
+                (
+                    "Muriuki Property Services",
+                    "pending-muriuki@example.com",
+                    "+254 712 456 789",
+                    "2714 8891 2456",
+                    "254712456789",
+                    "Kilimani",
+                    "Pending review demo record",
+                    "pending",
+                ),
+                (
+                    "Rongai Lettings",
+                    "rongai@example.com",
+                    "+254 733 000 445",
+                    "",
+                    "",
+                    "Langata",
+                    "Pending review demo record",
+                    "pending",
+                ),
+            ]
+            cur.executemany(
+                """
+                INSERT INTO landlord_profiles (
+                    full_name, email, phone_number, national_id_number, m_pesa_number,
+                    property_location, ownership_notes, verification_status, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """,
+                landlord_rows,
+            )
+
+        cur.execute("SELECT COUNT(*) AS count FROM scam_reports")
+        if cur.fetchone()[0] == 0:
+            cur.executemany(
+                """
+                INSERT INTO scam_reports (
+                    reporter_name, reporter_phone, landlord_name, landlord_phone,
+                    national_id_number, m_pesa_number, property_address, description,
+                    status, reference_number, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """,
+                [
+                    (
+                        "Amina Wanjiku",
+                        "+254 700 111 222",
+                        "Muriuki Property Services",
+                        "+254 712 456 789",
+                        "2714 8891 2456",
+                        "254712456789",
+                        "Kilimani, Nairobi",
+                        "Requested deposit before viewing the house.",
+                        "open",
+                        "RV-2026-0042",
+                    ),
+                    (
+                        "Brian Otieno",
+                        "+254 700 333 444",
+                        "Amani Rentals",
+                        "+254 733 500 900",
+                        "3891 5512 2240",
+                        "254733500900",
+                        "Kileleshwa, Nairobi",
+                        "Asked for rent via a personal account.",
+                        "under_review",
+                        "RV-2026-0039",
+                    ),
+                    (
+                        "Carol Njeri",
+                        "+254 700 555 666",
+                        "Nairobi Homes Agency",
+                        "+254 711 889 012",
+                        "4781 2210 7761",
+                        "254711889012",
+                        "South B, Nairobi",
+                        "Multiple complaints about fake listings.",
+                        "escalated",
+                        "RV-2026-0031",
+                    ),
+                ],
+            )
+
+        cur.execute("SELECT COUNT(*) AS count FROM schema_migrations")
+        if cur.fetchone()[0] == 0:
+            cur.executemany(
+                "INSERT INTO schema_migrations (filename, applied_at) VALUES (?, CURRENT_TIMESTAMP)",
+                [("001_schema_migrations.sql",), ("002_users.sql",), ("003_landlord_profiles.sql",), ("004_landlord_documents.sql",), ("005_scam_reports.sql",), ("006_search_logs.sql",), ("007_admin_actions.sql",), ("008_audit_logs.sql",)],
+            )
+
+        conn.commit()
+
+
+def init_db() -> None:
+    with _connect() as conn:
+        conn.executescript(SCHEMA_SQL)
+    _seed_data()
+
+
+def _fetchone(sql: str, params: tuple[Any, ...] = ()) -> dict[str, Any] | None:
+    with _connect() as conn:
+        cur = conn.execute(sql, params)
+        row = cur.fetchone()
+        return dict(row) if row else None
+
+
+def _fetchall(sql: str, params: tuple[Any, ...] = ()) -> list[dict[str, Any]]:
+    with _connect() as conn:
+        cur = conn.execute(sql, params)
+        return [dict(row) for row in cur.fetchall()]
+
+
+def _execute(sql: str, params: tuple[Any, ...] = ()) -> int:
+    with _connect() as conn:
+        cur = conn.execute(sql, params)
+        conn.commit()
+        return cur.lastrowid
+
+
 def search_landlord(search_term: str) -> dict[str, Any]:
-    if DATABASE_URL:
-        sql = """
-            SELECT
-                l.id,
-                l.full_name AS name,
-                l.phone_number AS phone,
-                l.national_id_number AS nid,
-                l.m_pesa_number AS m_pesa,
-                l.property_location AS location,
-                l.verification_status AS status,
-                COALESCE(r.report_count, 0) AS reports
-            FROM landlord_profiles l
-            LEFT JOIN (
-                SELECT landlord_name, COUNT(*) AS report_count
-                FROM scam_reports
-                GROUP BY landlord_name
-            ) r ON LOWER(r.landlord_name) = LOWER(l.full_name)
-            WHERE
-                LOWER(l.full_name) LIKE LOWER(%s)
-                OR LOWER(l.phone_number) LIKE LOWER(%s)
-                OR LOWER(l.national_id_number) LIKE LOWER(%s)
-                OR LOWER(l.m_pesa_number) LIKE LOWER(%s)
-            ORDER BY l.id
-            LIMIT 1
+    like = f"%{search_term}%"
+    row = _fetchone(
         """
-        like = f"%{search_term}%"
-        with psycopg.connect(DATABASE_URL, row_factory=dict_row) as conn:
-            with conn.cursor() as cur:
-                cur.execute(sql, (like, like, like, like))
-                row = cur.fetchone()
-                if row:
-                    return dict(row)
+        SELECT
+            l.id,
+            l.full_name AS name,
+            l.phone_number AS phone,
+            l.national_id_number AS nid,
+            l.m_pesa_number AS m_pesa,
+            l.property_location AS location,
+            l.verification_status AS status,
+            COALESCE(r.report_count, 0) AS reports
+        FROM landlord_profiles l
+        LEFT JOIN (
+            SELECT landlord_name, COUNT(*) AS report_count
+            FROM scam_reports
+            GROUP BY landlord_name
+        ) r ON LOWER(r.landlord_name) = LOWER(l.full_name)
+        WHERE
+            LOWER(l.full_name) LIKE LOWER(?)
+            OR LOWER(l.phone_number) LIKE LOWER(?)
+            OR LOWER(l.national_id_number) LIKE LOWER(?)
+            OR LOWER(l.m_pesa_number) LIKE LOWER(?)
+        ORDER BY l.id
+        LIMIT 1
+        """,
+        (like, like, like, like),
+    )
+    if not row:
         return {
             "name": search_term,
             "phone": "",
@@ -218,16 +514,11 @@ def search_landlord(search_term: str) -> dict[str, Any]:
             "status": "Not Found",
             "reports": 0,
         }
-    return _demo_find_landlord(search_term)
+    row["status"] = _pretty_status(str(row["status"]))
+    return row
 
 
 def search_timeline() -> list[dict[str, str]]:
-    if DATABASE_URL:
-        return [
-            {"date": "2026-06-12", "note": "First report submitted"},
-            {"date": "2026-06-15", "note": "Admin review started"},
-            {"date": "2026-06-18", "note": "Status marked high risk"},
-        ]
     return [
         {"date": "2026-06-12", "note": "First report submitted"},
         {"date": "2026-06-15", "note": "Admin review started"},
@@ -242,170 +533,249 @@ def log_search(
     result_status: str,
     matched_landlord_id: int | None = None,
 ) -> None:
-    if DATABASE_URL:
-        sql = """
-            INSERT INTO search_logs
-                (search_term, search_type, location, result_status, matched_landlord_id, created_at)
-            VALUES
-                (%s, %s, %s, %s, %s, NOW())
+    _execute(
         """
-        with psycopg.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    sql,
-                    (search_term, search_type, location, result_status, matched_landlord_id),
-                )
-            conn.commit()
-        return
-
-    # Demo fallback intentionally keeps search history in memory only.
+        INSERT INTO search_logs
+            (search_term, search_type, location, result_status, matched_landlord_id, created_at)
+        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        """,
+        (search_term, search_type, location, result_status, matched_landlord_id),
+    )
 
 
 def create_scam_report(form: dict[str, str]) -> str:
     reference = new_reference()
-    if DATABASE_URL:
-        sql = """
-            INSERT INTO scam_reports
-                (reporter_name, reporter_phone, landlord_name, landlord_phone, national_id_number,
-                 m_pesa_number, property_address, description, status, reference_number, created_at, updated_at)
-            VALUES
-                (%s, %s, %s, %s, %s, %s, %s, %s, 'open', %s, NOW(), NOW())
+    _execute(
         """
-        with psycopg.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    sql,
-                    (
-                        form["reporter_name"],
-                        form["reporter_phone"],
-                        form["landlord_name"],
-                        form["landlord_phone"],
-                        form["national_id_number"],
-                        form["m_pesa_number"],
-                        form["property_address"],
-                        form["description"],
-                        reference,
-                    ),
-                )
-            conn.commit()
-        return reference
-
-    demo_store.reports.insert(
-        0,
-        {
-            "id": len(demo_store.reports) + 1,
-            "ref": reference,
-            "landlord": form["landlord_name"],
-            "status": "Open",
-            "risk": "High",
-            "date": date.today().isoformat(),
-        },
+        INSERT INTO scam_reports
+            (reporter_name, reporter_phone, landlord_name, landlord_phone, national_id_number,
+             m_pesa_number, property_address, description, status, reference_number, created_at, updated_at)
+        VALUES
+            (?, ?, ?, ?, ?, ?, ?, ?, 'open', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        """,
+        (
+            form["reporter_name"],
+            form["reporter_phone"],
+            form["landlord_name"],
+            form["landlord_phone"],
+            form["national_id_number"],
+            form["m_pesa_number"],
+            form["property_address"],
+            form["description"],
+            reference,
+        ),
     )
     return reference
 
 
 def register_landlord(form: dict[str, str]) -> None:
-    if DATABASE_URL:
-        sql = """
-            INSERT INTO landlord_profiles
-                (full_name, email, phone_number, national_id_number, m_pesa_number,
-                 property_location, ownership_notes, verification_status, created_at, updated_at)
-            VALUES
-                (%s, %s, %s, %s, %s, %s, %s, 'pending', NOW(), NOW())
+    _execute(
         """
-        with psycopg.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    sql,
-                    (
-                        form["full_name"],
-                        form["email"],
-                        form["phone_number"],
-                        form["national_id_number"],
-                        form["m_pesa_number"],
-                        form["property_location"],
-                        form["ownership_notes"],
-                    ),
-                )
-            conn.commit()
-        return
-
-    demo_store.pending_landlords.insert(
-        0,
-        {
-            "id": len(demo_store.pending_landlords) + 1,
-            "name": form["full_name"],
-            "phone": form["phone_number"],
-            "location": form["property_location"],
-            "submitted": date.today().isoformat(),
-        },
+        INSERT INTO landlord_profiles
+            (full_name, email, phone_number, national_id_number, m_pesa_number,
+             property_location, ownership_notes, verification_status, created_at, updated_at)
+        VALUES
+            (?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        """,
+        (
+            form["full_name"],
+            form["email"],
+            form["phone_number"],
+            form["national_id_number"],
+            form["m_pesa_number"],
+            form["property_location"],
+            form["ownership_notes"],
+        ),
     )
 
 
 def authenticate(email: str, password: str, role: str) -> bool:
-    if DATABASE_URL:
-        sql = """
-            SELECT id, full_name, email, role, password_hash
-            FROM users
-            WHERE LOWER(email) = LOWER(%s) AND role = %s
-            LIMIT 1
+    row = _fetchone(
         """
-        with psycopg.connect(DATABASE_URL, row_factory=dict_row) as conn:
-            with conn.cursor() as cur:
-                cur.execute(sql, (email, role))
-                row = cur.fetchone()
-                if not row:
-                    return False
-                stored_hash = row["password_hash"]
-                try:
-                    return bool(PWD_CONTEXT.verify(password, stored_hash))
-                except Exception:
-                    return password == stored_hash
-
-    for user in demo_store.users:
-        if user["role"] == role and user["email"].lower() == email.lower() and user["password"] == password:
-            return True
-    return False
+        SELECT id, full_name, email, role, password_hash
+        FROM users
+        WHERE LOWER(email) = LOWER(?) AND role = ?
+        LIMIT 1
+        """,
+        (email, role),
+    )
+    if not row:
+        return False
+    stored_hash = row["password_hash"]
+    return password == stored_hash
 
 
 def dashboard_stats() -> dict[str, int]:
-    if DATABASE_URL:
-        with psycopg.connect(DATABASE_URL, row_factory=dict_row) as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT COUNT(*) AS pending FROM landlord_profiles WHERE verification_status = 'pending'")
-                pending = cur.fetchone()["pending"]
-                cur.execute("SELECT COUNT(*) AS open_reports FROM scam_reports WHERE status = 'open'")
-                open_reports = cur.fetchone()["open_reports"]
-                cur.execute("SELECT COUNT(*) AS escalated FROM scam_reports WHERE status = 'escalated'")
-                escalated = cur.fetchone()["escalated"]
-                cur.execute("SELECT COUNT(*) AS verified_this_week FROM landlord_profiles WHERE verification_status = 'verified'")
-                verified_this_week = cur.fetchone()["verified_this_week"]
-        return {
-            "pending": pending,
-            "open_reports": open_reports,
-            "escalated": escalated,
-            "verified_this_week": verified_this_week,
-        }
-
+    pending = _fetchone("SELECT COUNT(*) AS count FROM landlord_profiles WHERE verification_status = 'pending'")
+    open_reports = _fetchone("SELECT COUNT(*) AS count FROM scam_reports WHERE status = 'open'")
+    escalated = _fetchone("SELECT COUNT(*) AS count FROM scam_reports WHERE status = 'escalated'")
+    verified_this_week = _fetchone("SELECT COUNT(*) AS count FROM landlord_profiles WHERE verification_status = 'verified'")
     return {
-        "pending": len(demo_store.pending_landlords) + 10,
-        "open_reports": len(demo_store.reports) + 5,
-        "escalated": 4,
-        "verified_this_week": 9,
+        "pending": int((pending or {}).get("count", 0)),
+        "open_reports": int((open_reports or {}).get("count", 0)),
+        "escalated": int((escalated or {}).get("count", 0)),
+        "verified_this_week": int((verified_this_week or {}).get("count", 0)),
     }
 
 
 def homepage_stats() -> dict[str, str]:
-    if DATABASE_URL:
-        return {
-            "searches": "14,820",
-            "reports": "1,246",
-            "verified": "382",
-            "resolved": "91%",
-        }
     return {
         "searches": "14,820",
         "reports": "1,246",
         "verified": "382",
         "resolved": "91%",
     }
+
+
+def get_pending_landlords() -> list[dict[str, Any]]:
+    rows = _fetchall(
+        """
+        SELECT id, full_name AS name, phone_number AS phone, property_location AS location,
+               date(created_at) AS submitted
+        FROM landlord_profiles
+        WHERE verification_status = 'pending'
+        ORDER BY created_at DESC
+        """,
+    )
+    return rows
+
+
+def get_reports() -> list[dict[str, Any]]:
+    rows = _fetchall(
+        """
+        SELECT id,
+               reference_number AS ref,
+               landlord_name AS landlord,
+               status,
+               CASE
+                   WHEN status = 'escalated' THEN 'High'
+                   WHEN status = 'under_review' THEN 'Medium'
+                   ELSE 'High'
+               END AS risk,
+               date(created_at) AS date
+        FROM scam_reports
+        ORDER BY created_at DESC
+        """,
+    )
+    for row in rows:
+        row["status"] = _pretty_report_status(str(row["status"]))
+    return rows
+
+
+def _record_admin_action(
+    action_type: str,
+    entity_type: str,
+    entity_id: int | None,
+    notes: str = "",
+) -> None:
+    _execute(
+        """
+        INSERT INTO admin_actions (admin_user_id, action_type, entity_type, entity_id, notes, created_at)
+        VALUES (NULL, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        """,
+        (action_type, entity_type, entity_id, notes),
+    )
+
+
+def _record_audit(
+    actor_user_id: int | None,
+    action: str,
+    entity_type: str,
+    entity_id: int | None,
+    before_state: dict[str, Any] | None,
+    after_state: dict[str, Any] | None,
+) -> None:
+    _execute(
+        """
+        INSERT INTO audit_logs
+            (actor_user_id, action, entity_type, entity_id, before_state, after_state, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        """,
+        (
+            actor_user_id,
+            action,
+            entity_type,
+            entity_id,
+            None if before_state is None else json.dumps(before_state),
+            None if after_state is None else json.dumps(after_state),
+        ),
+    )
+
+
+def approve_landlord(landlord_id: int, actor_user_id: int | None = None) -> None:
+    before = _fetchone(
+        "SELECT id, full_name, verification_status FROM landlord_profiles WHERE id = ? LIMIT 1",
+        (landlord_id,),
+    )
+    if not before:
+        return
+    _execute(
+        """
+        UPDATE landlord_profiles
+        SET verification_status = 'verified', verified_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+        """,
+        (landlord_id,),
+    )
+    _record_admin_action("approve_landlord", "landlord_profile", landlord_id, "Approved landlord profile")
+    _record_audit(actor_user_id, "approve_landlord", "landlord_profile", landlord_id, before, {"verification_status": "verified"})
+
+
+def reject_landlord(landlord_id: int, reason: str = "", actor_user_id: int | None = None) -> None:
+    before = _fetchone(
+        "SELECT id, full_name, verification_status FROM landlord_profiles WHERE id = ? LIMIT 1",
+        (landlord_id,),
+    )
+    if not before:
+        return
+    _execute(
+        """
+        UPDATE landlord_profiles
+        SET verification_status = 'rejected', updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+        """,
+        (landlord_id,),
+    )
+    _record_admin_action("reject_landlord", "landlord_profile", landlord_id, reason)
+    _record_audit(actor_user_id, "reject_landlord", "landlord_profile", landlord_id, before, {"verification_status": "rejected"})
+
+
+def escalate_report(report_id: int, actor_user_id: int | None = None) -> None:
+    before = _fetchone(
+        "SELECT id, reference_number, landlord_name, status FROM scam_reports WHERE id = ? LIMIT 1",
+        (report_id,),
+    )
+    if not before:
+        return
+    _execute(
+        """
+        UPDATE scam_reports
+        SET status = 'escalated', updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+        """,
+        (report_id,),
+    )
+    _record_admin_action("escalate_report", "scam_report", report_id, "Marked report as escalated")
+    _record_audit(actor_user_id, "escalate_report", "scam_report", report_id, before, {"status": "escalated"})
+
+
+def close_report(report_id: int, actor_user_id: int | None = None) -> None:
+    before = _fetchone(
+        "SELECT id, reference_number, landlord_name, status FROM scam_reports WHERE id = ? LIMIT 1",
+        (report_id,),
+    )
+    if not before:
+        return
+    _execute(
+        """
+        UPDATE scam_reports
+        SET status = 'closed', updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+        """,
+        (report_id,),
+    )
+    _record_admin_action("close_report", "scam_report", report_id, "Closed report")
+    _record_audit(actor_user_id, "close_report", "scam_report", report_id, before, {"status": "closed"})
+
+
+init_db()
