@@ -1,2 +1,9 @@
 .agents
 .env
+rentalverify.sqlite3
+*.sqlite3
+*.db
+*.sqlite
+__pycache__/
+*.pyc
+server.log

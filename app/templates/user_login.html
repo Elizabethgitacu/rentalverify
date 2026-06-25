@@ -29,14 +29,14 @@
     {% if error %}
     <div class="form-alert">{{ error }}</div>
     {% endif %}
-    <form class="form-grid" method="post" action="/user/login">
+    <form class="form-grid" method="post" action="/user/login" autocomplete="off">
       <label class="full">
         Email or phone
-        <input type="text" name="email" value="amina@example.com">
+        <input type="text" name="email" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" readonly onfocus="this.removeAttribute('readonly')" placeholder="Enter email or phone">
       </label>
       <label class="full">
         Password
-        <input type="password" name="password" value="password123">
+        <input type="password" name="password" autocomplete="new-password" autocapitalize="off" spellcheck="false" data-lpignore="true" readonly onfocus="this.removeAttribute('readonly')" placeholder="Enter password">
       </label>
       <div class="button-row full">
         <button class="btn btn-primary" type="submit">Sign in</button>

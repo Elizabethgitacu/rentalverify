@@ -10,34 +10,34 @@
 <section class="search-layout">
   <section class="card form-card">
     <div class="panel-label">Registration details</div>
-    <form class="form-grid" method="post" action="/landlord/register">
+    <form class="form-grid" method="post" action="/landlord/register" autocomplete="off">
       <label>
         Full name
-        <input type="text" name="full_name" value="Muriuki Property Services">
+        <input type="text" name="full_name" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" placeholder="Enter full name">
       </label>
       <label>
         Email
-        <input type="email" name="email" value="landlord@example.com">
+        <input type="email" name="email" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" placeholder="Enter email">
       </label>
       <label>
         Phone number
-        <input type="text" name="phone_number" value="0712 456 789">
+        <input type="text" name="phone_number" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" placeholder="Enter phone number">
       </label>
       <label>
         National ID
-        <input type="text" name="national_id_number" value="2714 8891 2456">
+        <input type="text" name="national_id_number" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" placeholder="Enter national ID">
       </label>
       <label>
         M-Pesa number
-        <input type="text" name="m_pesa_number" value="254712456789">
+        <input type="text" name="m_pesa_number" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" placeholder="Enter M-Pesa number">
       </label>
       <label class="full">
         Property location
-        <input type="text" name="property_location" value="Kilimani, Nairobi">
+        <input type="text" name="property_location" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" placeholder="Enter property location">
       </label>
       <label class="full">
         Ownership notes
-        <textarea name="ownership_notes" rows="4">Registered owner, currently managing two apartments on Ring Road.</textarea>
+        <textarea name="ownership_notes" rows="4" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" placeholder="Add ownership notes"></textarea>
       </label>
       <div class="button-row full">
         <button class="btn btn-primary" type="submit">Submit for review</button>

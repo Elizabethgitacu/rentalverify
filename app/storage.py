@@ -452,7 +452,8 @@ def _seed_data() -> None:
 def init_db() -> None:
     with _connect() as conn:
         conn.executescript(SCHEMA_SQL)
-    _seed_data()
+    if os.getenv("RVERIFY_SEED_DEMO", "0").lower() in {"1", "true", "yes"}:
+        _seed_data()
 
 
 def _fetchone(sql: str, params: tuple[Any, ...] = ()) -> dict[str, Any] | None:
