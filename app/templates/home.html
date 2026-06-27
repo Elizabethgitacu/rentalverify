@@ -3,63 +3,69 @@
 {% block content %}
 <section class="hero">
   <div class="hero-copy">
-    <span class="eyebrow">Public verification platform</span>
-    <h1>Check a landlord before you pay a deposit.</h1>
+    <span class="eyebrow">Public verification</span>
+    <h1>Check an apartment/bnb before you send money.</h1>
     <p>
-      Search by phone number, name, national ID, or M-Pesa number. View scam history and report suspicious activity.
+      Search by phone number, name, national ID, or M-Pesa number. See the current record, flag risk, and submit a report if something feels off.
     </p>
     <div class="button-row">
       <a class="btn btn-primary" href="/search">Search landlord</a>
       <a class="btn btn-secondary" href="/report">Report scam</a>
       <a class="btn btn-secondary" href="/register">Create account</a>
     </div>
+
     <div class="feature-strip">
       <div>
-        <span>Fast lookup</span>
-        <strong>2 seconds</strong>
-      </div>
-      <div>
         <span>Public access</span>
-        <strong>No login needed</strong>
+        <strong>No login required</strong>
       </div>
       <div>
-        <span>Role-based dashboards</span>
-        <strong>Clean navigation</strong>
+        <span>Fast lookup</span>
+        <strong>Search by multiple identifiers</strong>
+      </div>
+      <div>
+        <span>Safety first</span>
+        <strong>Reports feed admin review</strong>
       </div>
     </div>
   </div>
-  <div class="hero-panel">
+
+  <aside class="hero-aside">
     <div class="panel-label">Live snapshot</div>
-    <div class="hero-stat-grid">
-      <div class="stat-card"><strong>{{ stats.searches }}</strong><span>Searches</span></div>
-      <div class="stat-card"><strong>{{ stats.reports }}</strong><span>Reports</span></div>
-      <div class="stat-card"><strong>{{ stats.verified }}</strong><span>Verified landlords</span></div>
-      <div class="stat-card"><strong>{{ stats.resolved }}</strong><span>Reports resolved</span></div>
+    <div class="hero-stats">
+      <div class="stat-card"><span>Searches</span><strong>{{ stats.searches }}</strong></div>
+      <div class="stat-card"><span>Reports</span><strong>{{ stats.reports }}</strong></div>
+      <div class="stat-card"><span>Verified landlords</span><strong>{{ stats.verified }}</strong></div>
+      <div class="stat-card"><span>Resolved reports</span><strong>{{ stats.resolved }}</strong></div>
     </div>
-    <div class="button-row">
-      <a class="btn btn-primary" href="/login">Login</a>
-      <a class="btn btn-secondary" href="/register">Register</a>
+    <div class="portal-card">
+      <span>What this page does</span>
+      <strong>Guides renters to the safest next step</strong>
+      <p>Search, verify, report, or create an account from one clear entry point.</p>
     </div>
-  </div>
+  </aside>
 </section>
 
 <section class="section">
   <div class="section-head">
     <h2>How it works</h2>
-    <p>A simple public workflow with role-specific dashboards in the background.</p>
+    <p>A simple flow: search, review, then report if needed.</p>
   </div>
   <div class="card-grid three">
     <article class="card">
-      <h3>1. Search</h3>
-      <p>Enter a phone number, name, NID, or M-Pesa number to check a landlord.</p>
+      <span class="panel-label">Step 1</span>
+      <h3>Search</h3>
+      <p>Look up a landlord using the details you already have.</p>
     </article>
     <article class="card">
-      <h3>2. Review status</h3>
-      <p>See a clear status, report count, and a warning when the record is high risk.</p>
+      <span class="panel-label">Step 2</span>
+      <h3>Review the status</h3>
+      <p>See whether the record is verified, under review, or missing.</p>
     </article>
     <article class="card">
-      <h3>3. Report incidents</h3>
-      <p>Submit scam reports that admins can review, escalate, and track.</p>
+      <span class="panel-label">Step 3</span>
+      <h3>Report suspicious activity</h3>
+      <p>Submit evidence so admins can escalate or close the case.</p>
     </article>
   </div>
 </section>
@@ -68,27 +74,26 @@
   <div>
     <div class="section-head">
       <h2>Featured landlords</h2>
-      <p>Placeholder data for the prototype.</p>
+      <p>Sample data used to demonstrate the public search experience.</p>
     </div>
     <div class="stack">
       {% for landlord in featured_landlords %}
       <article class="list-card">
         <div>
           <h3>{{ landlord.name }}</h3>
-          <p>{{ landlord.location }} - {{ landlord.reports }} reports</p>
+          <p>{{ landlord.location }} • {{ landlord.reports }} reports</p>
         </div>
         <span class="status {{ landlord.badge|lower }}">{{ landlord.badge }}</span>
       </article>
       {% endfor %}
     </div>
   </div>
+
   <aside class="note-box">
     <h3>Important note</h3>
-    <p>
-      A "Not Found" result does not mean the landlord is safe. It only means the system has no record yet.
-    </p>
+    <p>A missing record is not proof of safety. Confirm documents, phone numbers, and payment details before you pay a deposit.</p>
     <ul class="plain-list">
-      <li>Cross-check the landlord with documents.</li>
+      <li>Cross-check the landlord with official documents.</li>
       <li>Verify the phone and M-Pesa number carefully.</li>
       <li>Report suspicious behavior immediately.</li>
     </ul>

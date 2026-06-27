@@ -3,12 +3,13 @@
 {% block content %}
 <section class="page-head">
   <span class="eyebrow">Public search</span>
-  <h1>Search a landlord</h1>
-  <p>Use any known identifier to check whether the landlord has a verification record or scam history.</p>
+  <h1>Search an apartment/bnb</h1>
+  <p>Use any known identifier to check whether an apartment/bnb has a verification record or scam history.</p>
 </section>
 
 <section class="search-layout">
   <section class="card form-card">
+    <div class="panel-label">Lookup</div>
     <form class="form-grid" method="post" action="/search" autocomplete="off">
       <label>
         Search term
@@ -36,11 +37,11 @@
   </section>
 
   <aside class="note-box search-note">
-    <h3>What to look for</h3>
+    <h3>What each result means</h3>
     <ul class="plain-list">
-      <li>Verified means the landlord has passed admin review.</li>
-      <li>Reported means multiple complaints exist.</li>
-      <li>Not Found means the system has no record yet.</li>
+      <li><strong>Verified</strong> means the apartment/bnb passed admin review.</li>
+      <li><strong>Reported</strong> means the record has multiple complaints.</li>
+      <li><strong>Not found</strong> means the system has no record yet.</li>
     </ul>
   </aside>
 </section>
@@ -48,7 +49,7 @@
 <section class="section">
   <div class="section-head">
     <h2>Recent searches</h2>
-    <p>Placeholder data for the UI.</p>
+    <p>Sample search terms to show how the lookup behaves.</p>
   </div>
   <div class="tag-row">
     {% for item in recent_searches %}

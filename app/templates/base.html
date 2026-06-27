@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1d3b73">
   <title>{% block title %}RentalVerify{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', path='css/main.css') }}">
 </head>
@@ -10,19 +11,22 @@
   <div class="site-shell">
     <header class="topbar">
       <div class="brand-wrap">
-        <div class="brand">RentalVerify</div>
+        <a class="brand" href="/">RentalVerify</a>
       </div>
-      <nav class="nav">
+
+      <nav class="nav" aria-label="Primary">
         <a class="{% if active_page == 'home' %}active{% endif %}" href="/">Home</a>
         <a class="{% if active_page == 'search' %}active{% endif %}" href="/search">Search</a>
         <a class="{% if active_page == 'report' %}active{% endif %}" href="/report">Report</a>
         {% if current_user %}
-        <a class="{% if active_page.endswith('dashboard') %}active{% endif %}" href="{{ dashboard_url if dashboard_url else '/' }}">Dashboard</a>
+        <a class="{% if active_page and 'dashboard' in active_page %}active{% endif %}" href="{{ dashboard_url if dashboard_url else '/' }}">Dashboard</a>
         {% endif %}
       </nav>
+
       <div class="topbar-actions">
         {% if current_user %}
-        <a class="btn btn-primary btn-sm" href="/logout">Logout</a>
+        <span class="eyebrow">{{ current_user.role|title }}</span>
+        <a class="btn btn-secondary btn-sm" href="/logout">Logout</a>
         {% else %}
         <a class="btn btn-secondary btn-sm" href="/register">Register</a>
         <a class="btn btn-primary btn-sm" href="/login">Login</a>
@@ -30,28 +34,10 @@
       </div>
     </header>
 
-    <main class="page">
+    <main class="page" id="main">
       {% block content %}{% endblock %}
     </main>
 
-    {% if active_page == 'home' %}
-    <footer class="site-footer">
-      <div class="footer-brand">
-        <strong>RentalVerify</strong>
-        <p>Public landlord verification and rental scam intelligence for Kenya.</p>
-        <span>Do not use a not found result as proof of safety.</span>
-      </div>
-      <div class="footer-links">
-        <a href="/search">Search</a>
-        <a href="/report">Report</a>
-        <a href="/register">Register</a>
-        <a href="/login">Login</a>
-      </div>
-      <div class="footer-note">
-        <span>Public users first.</span>
-      </div>
-    </footer>
-    {% endif %}
   </div>
 </body>
 </html>

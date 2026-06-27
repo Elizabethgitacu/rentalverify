@@ -1,23 +1,16 @@
 {% extends "base.html" %}
 {% block title %}Tenant Dashboard - RentalVerify{% endblock %}
 {% block content %}
-<section class="dashboard-shell">
-  <aside class="sidebar">
-    <div>
-      <span class="eyebrow">Tenant area</span>
-      <h1>Dashboard</h1>
-      <p>This legacy route redirects to the tenant dashboard.</p>
-    </div>
-    <nav class="sidebar-nav">
-      <a class="active" href="/tenant/dashboard">Go to tenant dashboard</a>
-    </nav>
+<section class="auth-shell">
+  <aside class="auth-rail">
+    <span class="eyebrow">Legacy route</span>
+    <h1>Tenant dashboard</h1>
+    <p>This route forwards to the tenant dashboard.</p>
   </aside>
-  <div class="dashboard-main">
-    <section class="page-head compact">
-      <span class="eyebrow">Legacy route</span>
-      <h1>Tenant dashboard</h1>
-      <p>Please use /tenant/dashboard.</p>
-    </section>
-  </div>
+  <section class="card auth-card">
+    <div class="panel-label">Redirect</div>
+    <p>Please use the canonical dashboard route.</p>
+    <a class="btn btn-primary" href="/tenant/dashboard">Open tenant dashboard</a>
+  </section>
 </section>
 {% endblock %}

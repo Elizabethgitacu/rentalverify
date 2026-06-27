@@ -35,6 +35,7 @@
     <section class="dashboard-grid">
       <article class="card" id="profile">
         <div class="panel-label">Profile details</div>
+        <h2>Verification record</h2>
         <form class="form-grid" method="post" action="/landlord/profile">
           <label class="full">
             National ID
@@ -57,8 +58,10 @@
           </div>
         </form>
       </article>
+
       <article class="card" id="documents">
         <div class="panel-label">Upload documents</div>
+        <h2>Supporting files</h2>
         <form class="form-grid" method="post" action="/landlord/documents" enctype="multipart/form-data">
           <label class="full">
             ID copy
@@ -82,6 +85,7 @@
     <section class="section" id="activity">
       <div class="card">
         <div class="panel-label">Recent activity</div>
+        <h2>Status timeline</h2>
         <div class="timeline">
           <div class="timeline-item">
             <span class="timeline-date">Today</span>
@@ -94,6 +98,26 @@
         </div>
       </div>
     </section>
+
+    {% if documents %}
+    <section class="section">
+      <div class="card">
+        <div class="panel-label">Uploaded documents</div>
+        <h2>File list</h2>
+        <div class="stack">
+          {% for document in documents %}
+          <div class="list-card">
+            <div>
+              <h3>{{ document.document_type }}</h3>
+              <p>{{ document.file_path }}</p>
+            </div>
+            <span class="tag">Uploaded</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+    {% endif %}
   </div>
 </section>
 {% endblock %}

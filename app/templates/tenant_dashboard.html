@@ -23,7 +23,7 @@
     <section class="page-head compact">
       <span class="eyebrow">Account overview</span>
       <h1>Tenant dashboard</h1>
-      <p>Finish your profile after registration.</p>
+      <p>Finish your profile and keep the important activity in one place.</p>
     </section>
 
     <section class="kpi-grid">
@@ -36,6 +36,7 @@
     <section class="dashboard-grid">
       <article class="card" id="profile">
         <div class="panel-label">Complete profile</div>
+        <h2>Identity details</h2>
         <form class="form-grid" method="post" action="/tenant/profile">
           <label class="full">
             National ID
@@ -53,6 +54,7 @@
 
       <article class="card" id="recent-searches">
         <div class="panel-label">Recent searches</div>
+        <h2>Lookup history</h2>
         <div class="stack">
           {% for item in recent_searches %}
           <div class="list-card">
@@ -72,6 +74,7 @@
     <section class="section" id="recent-reports">
       <div class="card">
         <div class="panel-label">Recent reports</div>
+        <h2>Submitted cases</h2>
         <div class="stack">
           {% for item in recent_reports %}
           <div class="list-card">

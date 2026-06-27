@@ -5,33 +5,35 @@
   <div>
     <span class="eyebrow">Search result</span>
     <h1>{{ landlord.name }}</h1>
-    <p>{{ landlord.location }} - {{ landlord.phone }}</p>
+    <p>{{ landlord.location }} • {{ landlord.phone }}</p>
   </div>
   <div class="result-head-card">
-    <span>Verification status</span>
+    <span>Current status</span>
     <strong>{{ landlord.status }}</strong>
-    <p>High confidence match based on current records.</p>
+    <p>The record below is based on the best match found in the system.</p>
   </div>
 </section>
 
 <section class="result-grid">
-  <article class="card result-card accent-card">
+  <article class="card result-card">
     <div class="result-top">
-      <span class="status verified">{{ landlord.status }}</span>
-      <strong class="risk-score">Risk summary</strong>
+      <span class="status {{ landlord.status|lower|replace(' ', '-') }}">{{ landlord.status }}</span>
+      <span class="risk-score">Risk summary</span>
     </div>
+
     <div class="detail-grid">
-      <div><span>National ID</span><strong>{{ landlord.nid }}</strong></div>
-      <div><span>M-Pesa</span><strong>{{ landlord.m_pesa }}</strong></div>
+      <div><span>National ID</span><strong>{{ landlord.nid or '—' }}</strong></div>
+      <div><span>M-Pesa</span><strong>{{ landlord.m_pesa or '—' }}</strong></div>
       <div><span>Reports</span><strong>{{ landlord.reports }}</strong></div>
-      <div><span>Area</span><strong>{{ landlord.location }}</strong></div>
+      <div><span>Area</span><strong>{{ landlord.location or '—' }}</strong></div>
     </div>
+
     <div class="warning">
-      Not Found does not mean safe. Always confirm documents before sending money.
+      A missing record does not mean the landlord is safe. Confirm documents before making any payment.
     </div>
   </article>
 
-  <article class="card accent-card soft">
+  <article class="card">
     <div class="panel-label">Report timeline</div>
     <h2>Recent activity</h2>
     <div class="timeline">
@@ -49,16 +51,16 @@
   <aside class="note-box search-note">
     <h3>Interpretation</h3>
     <ul class="plain-list">
-      <li>Verified means admin review has confirmed the profile.</li>
+      <li>Verified means admin review confirmed the profile.</li>
       <li>Reported means one or more scams have been logged.</li>
-      <li>Not Found means there is not enough data yet.</li>
+      <li>Not found means there is not enough data yet.</li>
     </ul>
   </aside>
 
   <div class="card action-card">
     <div class="panel-label">Next step</div>
-    <h2>What do you want to do now?</h2>
-    <p>You can submit a report if something looks suspicious, or run another search.</p>
+    <h2>What would you like to do?</h2>
+    <p>Run another search or submit a report if anything looks suspicious.</p>
     <div class="button-row">
       <a class="btn btn-primary" href="/report">Submit report</a>
       <a class="btn btn-secondary" href="/search">New search</a>
