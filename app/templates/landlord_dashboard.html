@@ -6,12 +6,12 @@
     <div>
       <span class="eyebrow">Landlord area</span>
       <h1>Dashboard</h1>
-      <p>Check your profile and verification status.</p>
+      <p>Complete verification and upload documents.</p>
     </div>
     <nav class="sidebar-nav">
       <a class="active" href="/landlord/dashboard">Overview</a>
-      <a href="#profile">Profile</a>
-      <a href="#documents">Documents</a>
+      <a href="#profile">Profile details</a>
+      <a href="#documents">Upload documents</a>
       <a href="#activity">Activity</a>
       <a href="/search">Public search</a>
       <a href="/logout">Logout</a>
@@ -27,23 +27,55 @@
 
     <section class="kpi-grid">
       <div class="kpi"><span>Phone</span><strong>{{ profile.phone }}</strong></div>
-      <div class="kpi"><span>National ID</span><strong>{{ profile.nid }}</strong></div>
-      <div class="kpi"><span>M-Pesa</span><strong>{{ profile.m_pesa }}</strong></div>
+      <div class="kpi"><span>National ID</span><strong>{{ profile.nid or 'Pending' }}</strong></div>
+      <div class="kpi"><span>M-Pesa</span><strong>{{ profile.m_pesa or 'Pending' }}</strong></div>
       <div class="kpi"><span>Reports</span><strong>{{ profile.reports }}</strong></div>
     </section>
 
     <section class="dashboard-grid">
       <article class="card" id="profile">
-        <div class="panel-label">Profile summary</div>
-        <p>Keep your details accurate so admins can verify them faster.</p>
+        <div class="panel-label">Profile details</div>
+        <form class="form-grid" method="post" action="/landlord/profile">
+          <label class="full">
+            National ID
+            <input type="text" name="national_id_number" value="{{ profile.nid }}" placeholder="Enter national ID">
+          </label>
+          <label class="full">
+            M-Pesa number
+            <input type="text" name="m_pesa_number" value="{{ profile.m_pesa }}" placeholder="Enter M-Pesa number">
+          </label>
+          <label class="full">
+            Property location
+            <input type="text" name="property_location" value="{{ profile.location }}" placeholder="Enter property location">
+          </label>
+          <label class="full">
+            Ownership notes
+            <textarea name="ownership_notes" rows="4" placeholder="Add ownership notes"></textarea>
+          </label>
+          <div class="button-row full">
+            <button class="btn btn-primary" type="submit">Save details</button>
+          </div>
+        </form>
       </article>
       <article class="card" id="documents">
-        <div class="panel-label">Verification checklist</div>
-        <ul class="checklist">
-          {% for item in documents %}
-          <li>{{ item }}</li>
-          {% endfor %}
-        </ul>
+        <div class="panel-label">Upload documents</div>
+        <form class="form-grid" method="post" action="/landlord/documents" enctype="multipart/form-data">
+          <label class="full">
+            ID copy
+            <input type="file" name="id_copy" accept=".pdf,.png,.jpg,.jpeg">
+          </label>
+          <label class="full">
+            Ownership document
+            <input type="file" name="ownership_document" accept=".pdf,.png,.jpg,.jpeg">
+          </label>
+          <label class="full">
+            Passport photo
+            <input type="file" name="passport_photo" accept=".png,.jpg,.jpeg">
+          </label>
+          <div class="button-row full">
+            <button class="btn btn-primary" type="submit">Upload</button>
+          </div>
+        </form>
       </article>
     </section>
 

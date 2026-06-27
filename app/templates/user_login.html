@@ -1,48 +1,16 @@
 {% extends "base.html" %}
-{% block title %}User Login - RentalVerify{% endblock %}
+{% block title %}Tenant Login - RentalVerify{% endblock %}
 {% block content %}
 <section class="auth-shell">
   <aside class="auth-rail">
-    <span class="eyebrow">Customer access</span>
-    <h1>User login</h1>
-    <p>
-      Log in to track your scam reports, follow up on submissions, and view saved landlord checks.
-    </p>
-    <div class="auth-points">
-      <div>
-        <strong>Report tracking</strong>
-        <span>See the status of reports you have submitted.</span>
-      </div>
-      <div>
-        <strong>Search history</strong>
-        <span>Review previous landlord checks and important notes.</span>
-      </div>
-      <div>
-        <strong>Simple access</strong>
-        <span>This is for renters and other external users, not admins.</span>
-      </div>
-    </div>
+    <span class="eyebrow">Secure access</span>
+    <h1>Tenant login</h1>
+    <p>Use the shared login form to sign in as a tenant.</p>
   </aside>
-
   <section class="card auth-card">
-    <div class="panel-label">Sign in</div>
-    {% if error %}
-    <div class="form-alert">{{ error }}</div>
-    {% endif %}
-    <form class="form-grid" method="post" action="/user/login" autocomplete="off">
-      <label class="full">
-        Email or phone
-        <input type="text" name="email" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" readonly onfocus="this.removeAttribute('readonly')" placeholder="Enter email or phone">
-      </label>
-      <label class="full">
-        Password
-        <input type="password" name="password" autocomplete="new-password" autocapitalize="off" spellcheck="false" data-lpignore="true" readonly onfocus="this.removeAttribute('readonly')" placeholder="Enter password">
-      </label>
-      <div class="button-row full">
-        <button class="btn btn-primary" type="submit">Sign in</button>
-        <a class="btn btn-secondary" href="/report">Continue without account</a>
-      </div>
-    </form>
+    <div class="panel-label">Use shared login</div>
+    <p>This legacy route redirects to the shared login page.</p>
+    <a class="btn btn-primary" href="/login?role=tenant">Go to login</a>
   </section>
 </section>
 {% endblock %}

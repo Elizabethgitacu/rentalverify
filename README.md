@@ -23,7 +23,7 @@ Public auth pages:
 - `/register`
 
 Dashboards:
-- `/user/dashboard`
+- `/tenant/dashboard`
 - `/landlord/dashboard`
 - `/admin/dashboard`
 
@@ -36,7 +36,10 @@ Dashboards:
 - `/report/confirmation`
 - `/landlord/register`
 - `/landlord/login`
-- `/user/login`
+- `/tenant/login`
+- `/user/login` (legacy alias)
+- `/tenant/dashboard`
+- `/user/dashboard` (legacy alias)
 - `/landlord/dashboard`
 - `/admin/login`
 - `/admin/access`

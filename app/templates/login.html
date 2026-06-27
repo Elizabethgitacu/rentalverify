@@ -7,7 +7,7 @@
     <h1>Login</h1>
     <p>Choose your role, then sign in to the right dashboard.</p>
     <div class="auth-points">
-      <div><strong>Users</strong><span>Search, report, and follow up.</span></div>
+      <div><strong>Tenants</strong><span>Search, report, and follow up.</span></div>
       <div><strong>Landlords</strong><span>View verification status and documents.</span></div>
       <div><strong>Admins</strong><span>Review submissions and reports.</span></div>
     </div>
@@ -22,7 +22,7 @@
       <label class="full">
         Role
         <select name="role" autocomplete="off">
-          <option value="user" {% if role == 'user' %}selected{% endif %}>User</option>
+          <option value="tenant" {% if role == 'tenant' %}selected{% endif %}>Tenant</option>
           <option value="landlord" {% if role == 'landlord' %}selected{% endif %}>Landlord</option>
           <option value="admin" {% if role == 'admin' %}selected{% endif %}>Admin</option>
         </select>

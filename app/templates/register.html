@@ -7,8 +7,8 @@
     <h1>Register</h1>
     <p>Select your role inside the form. Admins are seeded separately.</p>
     <div class="auth-points">
-      <div><strong>User</strong><span>Search and report suspicious landlords.</span></div>
-      <div><strong>Landlord</strong><span>Submit your details for verification.</span></div>
+      <div><strong>Tenant</strong><span>Search and report suspicious landlords.</span></div>
+      <div><strong>Landlord</strong><span>Submit your details, then complete verification in the dashboard.</span></div>
       <div><strong>Admin</strong><span>Not available on the public form.</span></div>
     </div>
   </aside>
@@ -18,11 +18,11 @@
     {% if error %}
     <div class="form-alert">{{ error }}</div>
     {% endif %}
-    <form class="form-grid" method="post" action="/register" autocomplete="off" id="register-form">
+    <form class="form-grid" method="post" action="/register" autocomplete="off">
       <label class="full">
         Role
         <select name="role" id="role-select" autocomplete="off">
-          <option value="user" {% if role == 'user' %}selected{% endif %}>User</option>
+          <option value="tenant" {% if role == 'tenant' %}selected{% endif %}>Tenant</option>
           <option value="landlord" {% if role == 'landlord' %}selected{% endif %}>Landlord</option>
         </select>
       </label>
@@ -42,23 +42,10 @@
         Phone number
         <input type="text" name="phone_number" autocomplete="off" placeholder="Enter phone number">
       </label>
-      <div id="landlord-fields" class="full register-section">
-        <label>
-          National ID
-          <input type="text" name="national_id_number" autocomplete="off" placeholder="Enter national ID">
-        </label>
-        <label>
-          M-Pesa number
-          <input type="text" name="m_pesa_number" autocomplete="off" placeholder="Enter M-Pesa number">
-        </label>
-        <label class="full">
-          Property location
-          <input type="text" name="property_location" autocomplete="off" placeholder="Enter property location">
-        </label>
-        <label class="full">
-          Ownership notes
-          <textarea name="ownership_notes" rows="4" placeholder="Add ownership notes"></textarea>
-        </label>
+      <div id="landlord-note" class="full register-section" hidden>
+        <p>
+          Landlord verification details and document uploads are completed after login from the dashboard.
+        </p>
       </div>
       <div class="button-row full">
         <button class="btn btn-primary" type="submit">Create account</button>
@@ -70,10 +57,9 @@
 
 <script>
   const roleSelect = document.getElementById('role-select');
-  const landlordFields = document.getElementById('landlord-fields');
+  const landlordNote = document.getElementById('landlord-note');
   const refresh = () => {
-    const isLandlord = roleSelect.value === 'landlord';
-    landlordFields.hidden = !isLandlord;
+    landlordNote.hidden = roleSelect.value !== 'landlord';
   };
   roleSelect.addEventListener('change', refresh);
   refresh();

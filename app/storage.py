@@ -169,7 +169,11 @@ CREATE TABLE IF NOT EXISTS users (
     email TEXT NOT NULL UNIQUE,
     phone_number TEXT,
     password_hash TEXT NOT NULL,
-    role TEXT NOT NULL CHECK (role IN ('user', 'landlord', 'admin')),
+    role TEXT NOT NULL CHECK (role IN ('tenant', 'landlord', 'admin')),
+    national_id_number TEXT,
+    m_pesa_number TEXT,
+    profile_status TEXT NOT NULL DEFAULT 'incomplete',
+    profile_completed_at TEXT,
     is_active INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -267,6 +271,11 @@ def _pretty_report_status(status: str) -> str:
     return _pretty_status(status)
 
 
+def _normalize_role(role: str) -> str:
+    role = role.strip().lower()
+    return "tenant" if role == "user" else role
+
+
 def _demo_find_landlord(search_term: str) -> dict[str, Any]:
     term = _normalize_query(search_term)
     if not term:
@@ -319,7 +328,7 @@ def _seed_data() -> None:
                         item["email"],
                         "",
                         item["password"],
-                        item["role"],
+                        _normalize_role(item["role"]),
                     )
                     for item in demo_store.users
                 ],
@@ -453,6 +462,52 @@ def init_db() -> None:
     with _connect() as conn:
         conn.executescript(SCHEMA_SQL)
         cur = conn.cursor()
+        for column_sql in [
+            "ALTER TABLE users ADD COLUMN national_id_number TEXT",
+            "ALTER TABLE users ADD COLUMN m_pesa_number TEXT",
+            "ALTER TABLE users ADD COLUMN profile_status TEXT NOT NULL DEFAULT 'incomplete'",
+            "ALTER TABLE users ADD COLUMN profile_completed_at TEXT",
+        ]:
+            try:
+                cur.execute(column_sql)
+            except sqlite3.OperationalError:
+                pass
+        cur.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='landlord_profiles'")
+        landlord_schema = (cur.fetchone() or {"sql": ""})["sql"] or ""
+        if "users_legacy" in landlord_schema:
+            cur.execute("ALTER TABLE landlord_profiles RENAME TO landlord_profiles_legacy")
+            cur.execute(
+                """
+                CREATE TABLE landlord_profiles (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                    full_name TEXT NOT NULL,
+                    email TEXT,
+                    phone_number TEXT NOT NULL,
+                    national_id_number TEXT NOT NULL,
+                    m_pesa_number TEXT NOT NULL,
+                    property_location TEXT NOT NULL,
+                    ownership_notes TEXT,
+                    verification_status TEXT NOT NULL DEFAULT 'pending' CHECK (verification_status IN ('pending', 'verified', 'rejected')),
+                    verified_at TEXT,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            cur.execute(
+                """
+                INSERT INTO landlord_profiles (
+                    id, user_id, full_name, email, phone_number, national_id_number, m_pesa_number,
+                    property_location, ownership_notes, verification_status, verified_at, created_at, updated_at
+                )
+                SELECT
+                    id, NULL, full_name, email, phone_number, national_id_number, m_pesa_number,
+                    property_location, ownership_notes, verification_status, verified_at, created_at, updated_at
+                FROM landlord_profiles_legacy
+                """
+            )
+            cur.execute("DROP TABLE landlord_profiles_legacy")
         cur.execute("SELECT COUNT(*) AS count FROM users WHERE role = 'admin'")
         if cur.fetchone()[0] == 0:
             cur.execute(
@@ -466,23 +521,28 @@ def init_db() -> None:
 
 
 def create_account(form: dict[str, str]) -> dict[str, Any]:
-    role = form["role"].strip().lower()
-    if role not in {"user", "landlord"}:
+    role = _normalize_role(form["role"])
+    if role not in {"tenant", "landlord"}:
         raise ValueError("Unsupported registration role.")
 
+    db_role = role
     with _connect() as conn:
         cur = conn.cursor()
         cur.execute(
             """
-            INSERT INTO users (full_name, email, phone_number, password_hash, role, is_active, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            INSERT INTO users (
+                full_name, email, phone_number, password_hash, role,
+                national_id_number, m_pesa_number, profile_status,
+                is_active, created_at, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, NULL, NULL, 'incomplete', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             """,
             (
                 form["full_name"],
                 form["email"],
                 form.get("phone_number", ""),
                 form["password"],
-                role,
+                db_role,
             ),
         )
         user_id = cur.lastrowid
@@ -501,19 +561,19 @@ def create_account(form: dict[str, str]) -> dict[str, Any]:
                     form["full_name"],
                     form["email"],
                     form.get("phone_number", ""),
-                    form.get("national_id_number", ""),
-                    form.get("m_pesa_number", ""),
-                    form.get("property_location", ""),
-                    form.get("ownership_notes", ""),
+                    "",
+                    "",
+                    "",
+                    "",
                 ),
             )
             landlord_profile = {
                 "id": cur.lastrowid,
                 "name": form["full_name"],
                 "phone": form.get("phone_number", ""),
-                "nid": form.get("national_id_number", ""),
-                "m_pesa": form.get("m_pesa_number", ""),
-                "location": form.get("property_location", ""),
+                "nid": "",
+                "m_pesa": "",
+                "location": "",
                 "status": "Pending Review",
                 "reports": 0,
             }
@@ -528,6 +588,93 @@ def create_account(form: dict[str, str]) -> dict[str, Any]:
         "landlord_profile": landlord_profile,
     }
     return account
+
+
+def get_tenant_profile_by_email(email: str) -> dict[str, Any] | None:
+    row = _fetchone(
+        """
+        SELECT id, full_name AS name, phone_number AS phone, national_id_number, m_pesa_number, profile_status
+        FROM users
+        WHERE LOWER(email) = LOWER(?) AND role = 'tenant'
+        LIMIT 1
+        """,
+        (email,),
+    )
+    if not row:
+        return None
+    return row
+
+
+def update_tenant_profile(email: str, national_id_number: str, m_pesa_number: str) -> None:
+    _execute(
+        """
+        UPDATE users
+        SET national_id_number = ?, m_pesa_number = ?, profile_status = 'complete', profile_completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+        WHERE LOWER(email) = LOWER(?) AND role = 'tenant'
+        """,
+        (national_id_number, m_pesa_number, email),
+    )
+
+
+def update_landlord_profile(email: str, national_id_number: str, m_pesa_number: str, property_location: str, ownership_notes: str) -> None:
+    _execute(
+        """
+        UPDATE landlord_profiles
+        SET national_id_number = ?, m_pesa_number = ?, property_location = ?, ownership_notes = ?, verification_status = 'pending', updated_at = CURRENT_TIMESTAMP
+        WHERE LOWER(email) = LOWER(?)
+        """,
+        (national_id_number, m_pesa_number, property_location, ownership_notes, email),
+    )
+
+
+def add_landlord_documents(email: str, documents: list[tuple[str, str]]) -> None:
+    landlord = _fetchone(
+        """
+        SELECT id
+        FROM landlord_profiles
+        WHERE LOWER(email) = LOWER(?)
+        ORDER BY created_at DESC
+        LIMIT 1
+        """,
+        (email,),
+    )
+    if not landlord:
+        return
+    landlord_profile_id = landlord["id"]
+    with _connect() as conn:
+        cur = conn.cursor()
+        cur.executemany(
+            """
+            INSERT INTO landlord_documents (landlord_profile_id, document_type, file_path, uploaded_at)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            """,
+            [(landlord_profile_id, document_type, file_path) for document_type, file_path in documents],
+        )
+        conn.commit()
+
+
+def get_landlord_documents(email: str) -> list[dict[str, Any]]:
+    landlord = _fetchone(
+        """
+        SELECT id
+        FROM landlord_profiles
+        WHERE LOWER(email) = LOWER(?)
+        ORDER BY created_at DESC
+        LIMIT 1
+        """,
+        (email,),
+    )
+    if not landlord:
+        return []
+    return _fetchall(
+        """
+        SELECT document_type, file_path, date(uploaded_at) AS uploaded_at
+        FROM landlord_documents
+        WHERE landlord_profile_id = ?
+        ORDER BY uploaded_at DESC
+        """,
+        (landlord["id"],),
+    )
 
 
 def get_landlord_profile_by_email(email: str) -> dict[str, Any] | None:
@@ -725,14 +872,17 @@ def register_landlord(form: dict[str, str]) -> None:
 
 
 def authenticate(email: str, password: str, role: str) -> bool:
+    role = _normalize_role(role)
+    roles = ("tenant", "user") if role == "tenant" else (role,)
+    placeholders = ", ".join("?" for _ in roles)
     row = _fetchone(
-        """
+        f"""
         SELECT id, full_name, email, role, password_hash
         FROM users
-        WHERE LOWER(email) = LOWER(?) AND role = ?
+        WHERE LOWER(email) = LOWER(?) AND role IN ({placeholders})
         LIMIT 1
         """,
-        (email, role),
+        (email, *roles),
     )
     if not row:
         return False

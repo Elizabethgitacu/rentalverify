@@ -7,3 +7,4 @@ rentalverify.sqlite3
 __pycache__/
 *.pyc
 server.log
+app/uploads/

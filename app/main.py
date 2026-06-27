@@ -1,13 +1,14 @@
 import os
 from pathlib import Path
 
-from fastapi import FastAPI, Form, Query, Request
+from fastapi import FastAPI, File, Form, Query, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.storage import (
+    add_landlord_documents,
     approve_landlord,
     authenticate,
     close_report,
@@ -15,11 +16,13 @@ from app.storage import (
     create_scam_report,
     dashboard_stats,
     demo_store,
+    get_landlord_documents,
     get_landlord_profile_by_email,
     get_pending_landlords,
     get_recent_reports,
     get_recent_searches,
     get_reports,
+    get_tenant_profile_by_email,
     get_user_dashboard_overview,
     homepage_stats,
     escalate_report,
@@ -27,10 +30,13 @@ from app.storage import (
     reject_landlord,
     search_landlord,
     search_timeline,
+    update_landlord_profile,
+    update_tenant_profile,
 )
 
 
 BASE_DIR = Path(__file__).resolve().parent
+UPLOAD_DIR = BASE_DIR / "uploads"
 app = FastAPI(title="RentalVerify")
 app.add_middleware(
     SessionMiddleware,
@@ -57,12 +63,18 @@ def redirect(url: str) -> RedirectResponse:
 
 def is_role(request: Request, role: str) -> bool:
     user = request.session.get("user")
-    return bool(user and user.get("role") == role)
+    if not user:
+        return False
+    current_role = user.get("role")
+    if role == "tenant":
+        return current_role in {"tenant", "user"}
+    return current_role == role
 
 
 def dashboard_url_for_role(role: str) -> str:
     return {
-        "user": "/user/dashboard",
+        "tenant": "/tenant/dashboard",
+        "user": "/tenant/dashboard",
         "landlord": "/landlord/dashboard",
         "admin": "/admin/dashboard",
     }.get(role, "/")
@@ -72,6 +84,18 @@ def demo_landlord_profile() -> dict:
     profile = demo_store.landlords[0].copy()
     profile["status"] = "Pending Review"
     return profile
+
+
+def _save_upload(email: str, label: str, upload: UploadFile) -> str:
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    safe_name = upload.filename or f"{label}.bin"
+    safe_name = safe_name.replace("/", "_").replace("\\", "_")
+    target_dir = UPLOAD_DIR / email.replace("@", "_at_")
+    target_dir.mkdir(parents=True, exist_ok=True)
+    target_path = target_dir / f"{label}_{safe_name}"
+    with target_path.open("wb") as buffer:
+        buffer.write(upload.file.read())
+    return str(target_path)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -95,10 +119,10 @@ def home(request: Request):
 
 
 @app.get("/login", response_class=HTMLResponse)
-def login_page(request: Request, role: str = Query(default="user")):
+def login_page(request: Request, role: str = Query(default="tenant")):
     role = role.lower()
-    if role not in {"user", "landlord", "admin"}:
-        role = "user"
+    if role not in {"tenant", "landlord", "admin"}:
+        role = "tenant"
     return render(
         request,
         "login.html",
@@ -115,6 +139,8 @@ def login_submit(
     password: str = Form(...),
 ):
     role = role.lower()
+    if role == "user":
+        role = "tenant"
     if authenticate(email, password, role):
         request.session["user"] = {"role": role, "email": email, "name": role.title()}
         if role == "landlord":
@@ -130,10 +156,10 @@ def login_submit(
 
 
 @app.get("/register", response_class=HTMLResponse)
-def register_page(request: Request, role: str = Query(default="user")):
+def register_page(request: Request, role: str = Query(default="tenant")):
     role = role.lower()
-    if role not in {"user", "landlord"}:
-        role = "user"
+    if role not in {"tenant", "landlord"}:
+        role = "tenant"
     return render(
         request,
         "register.html",
@@ -156,10 +182,11 @@ def register_submit(
     ownership_notes: str = Form(""),
 ):
     role = role.lower()
-    if role not in {"user", "landlord"}:
-        return render(request, "register.html", active_page="register", role="user", error="Choose User or Landlord.")
-    if role == "landlord" and not all([national_id_number.strip(), m_pesa_number.strip(), property_location.strip()]):
-        return render(request, "register.html", active_page="register", role=role, error="Landlord registration needs ID, M-Pesa, and property location.")
+    role = role.lower()
+    if role not in {"tenant", "landlord"}:
+        return render(request, "register.html", active_page="register", role="tenant", error="Choose Tenant or Landlord.")
+    if role == "landlord" and not phone_number.strip():
+        return render(request, "register.html", active_page="register", role=role, error="Landlord registration needs a phone number.")
     try:
         account = create_account(
             {
@@ -311,9 +338,26 @@ def landlord_login_submit(
     return redirect("/login?role=landlord")
 
 
+@app.get("/tenant/login", response_class=HTMLResponse)
+def tenant_login(request: Request):
+    return redirect("/login?role=tenant")
+
+
 @app.get("/user/login", response_class=HTMLResponse)
 def user_login(request: Request):
-    return redirect("/login?role=user")
+    return redirect("/login?role=tenant")
+
+
+@app.post("/tenant/login", response_class=HTMLResponse)
+def tenant_login_submit(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+):
+    if authenticate(email, password, "tenant"):
+        request.session["user"] = {"role": "tenant", "email": email, "name": "Tenant"}
+        return redirect("/tenant/dashboard")
+    return redirect("/login?role=tenant")
 
 
 @app.post("/user/login", response_class=HTMLResponse)
@@ -322,24 +366,42 @@ def user_login_submit(
     email: str = Form(...),
     password: str = Form(...),
 ):
-    if authenticate(email, password, "user"):
-        request.session["user"] = {"role": "user", "email": email, "name": "User"}
-        return redirect("/user/dashboard")
-    return redirect("/login?role=user")
+    return tenant_login_submit(request, email=email, password=password)
 
 
-@app.get("/user/dashboard", response_class=HTMLResponse)
-def user_dashboard(request: Request):
-    if not is_role(request, "user"):
-        return redirect("/login?role=user")
+@app.get("/tenant/dashboard", response_class=HTMLResponse)
+def tenant_dashboard(request: Request):
+    if not is_role(request, "tenant"):
+        return redirect("/login?role=tenant")
+    user = request.session.get("user") or {}
+    profile = get_tenant_profile_by_email(user.get("email", "")) or {"national_id_number": "", "m_pesa_number": "", "profile_status": "incomplete"}
     return render(
         request,
-        "user_dashboard.html",
-        active_page="user_dashboard",
+        "tenant_dashboard.html",
+        active_page="tenant_dashboard",
+        profile=profile,
         overview=get_user_dashboard_overview(),
         recent_searches=get_recent_searches(),
         recent_reports=get_recent_reports(),
     )
+
+
+@app.get("/user/dashboard", response_class=HTMLResponse)
+def user_dashboard(request: Request):
+    return redirect("/tenant/dashboard")
+
+
+@app.post("/tenant/profile")
+def tenant_profile_submit(
+    request: Request,
+    national_id_number: str = Form(...),
+    m_pesa_number: str = Form(...),
+):
+    if not is_role(request, "tenant"):
+        return redirect("/login?role=tenant")
+    user = request.session.get("user") or {}
+    update_tenant_profile(user.get("email", ""), national_id_number, m_pesa_number)
+    return redirect("/tenant/dashboard")
 
 
 @app.get("/landlord/dashboard", response_class=HTMLResponse)
@@ -348,18 +410,53 @@ def landlord_dashboard(request: Request):
         return redirect("/login?role=landlord")
     user = request.session.get("user") or {}
     profile = request.session.get("landlord_profile") or get_landlord_profile_by_email(user.get("email", "")) or demo_landlord_profile()
+    documents = get_landlord_documents(user.get("email", ""))
     return render(
         request,
         "landlord_dashboard.html",
         active_page="landlord_dashboard",
         profile=profile,
-        documents=[
-            "National ID copy",
-            "Property ownership document",
-            "Passport photo",
-            "Phone number confirmation",
-        ],
+        documents=documents,
     )
+
+
+@app.post("/landlord/profile")
+def landlord_profile_submit(
+    request: Request,
+    national_id_number: str = Form(...),
+    m_pesa_number: str = Form(...),
+    property_location: str = Form(...),
+    ownership_notes: str = Form(""),
+):
+    if not is_role(request, "landlord"):
+        return redirect("/login?role=landlord")
+    user = request.session.get("user") or {}
+    update_landlord_profile(user.get("email", ""), national_id_number, m_pesa_number, property_location, ownership_notes)
+    request.session["landlord_profile"] = get_landlord_profile_by_email(user.get("email", "")) or demo_landlord_profile()
+    return redirect("/landlord/dashboard")
+
+
+@app.post("/landlord/documents")
+async def landlord_documents_submit(
+    request: Request,
+    id_copy: UploadFile | None = File(default=None),
+    ownership_document: UploadFile | None = File(default=None),
+    passport_photo: UploadFile | None = File(default=None),
+):
+    if not is_role(request, "landlord"):
+        return redirect("/login?role=landlord")
+    user = request.session.get("user") or {}
+    docs = []
+    for label, upload in [
+        ("ID copy", id_copy),
+        ("Ownership document", ownership_document),
+        ("Passport photo", passport_photo),
+    ]:
+        if upload and upload.filename:
+            docs.append((label, _save_upload(user.get("email", ""), label.replace(" ", "_"), upload)))
+    if docs:
+        add_landlord_documents(user.get("email", ""), docs)
+    return redirect("/landlord/dashboard")
 
 
 @app.get("/admin/login", response_class=HTMLResponse)
