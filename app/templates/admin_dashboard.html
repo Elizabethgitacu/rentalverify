@@ -50,6 +50,22 @@
           <a class="btn btn-secondary" href="/admin/analytics">View analytics</a>
         </div>
       </article>
+      <article class="card">
+        <div class="panel-label">Email test</div>
+        <h2>Send a test message</h2>
+        <p>Use this to verify Gmail SMTP is working before enabling account emails.</p>
+        {% if email_status %}
+        <div class="note-box {% if email_status == 'success' %}success{% else %}error{% endif %}">
+          {{ email_message }}
+        </div>
+        {% endif %}
+        <form class="stack" method="post" action="/admin/test-email">
+          <input type="email" name="recipient_email" value="{{ email_recipient }}" placeholder="Recipient email" required>
+          <input type="text" name="subject" value="RentalVerify test email" placeholder="Subject" required>
+          <textarea name="message" rows="4" placeholder="Message" required>This is a test from RentalVerify.</textarea>
+          <button class="btn btn-primary" type="submit">Send test email</button>
+        </form>
+      </article>
     </section>
   </div>
 </section>

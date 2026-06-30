@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
+from app.mailer import send_email
 from app.storage import (
     add_landlord_documents,
     approve_landlord,
@@ -23,6 +24,7 @@ from app.storage import (
     get_recent_searches,
     get_reports,
     get_tenant_profile_by_email,
+    get_user_by_email_and_role,
     get_user_dashboard_overview,
     homepage_stats,
     escalate_report,
@@ -86,6 +88,34 @@ def demo_landlord_profile() -> dict:
     return profile
 
 
+def _send_registration_email(full_name: str, email: str, role: str) -> None:
+    subject = "Welcome to RentalVerify"
+    body = (
+        f"Hello {full_name},\n\n"
+        f"Your {role} account has been created successfully on RentalVerify.\n"
+        "You can now log in and continue with your profile setup or verification steps.\n\n"
+        "If you did not create this account, please ignore this message.\n\n"
+        "Kind regards,\n"
+        "RentalVerify Team"
+    )
+    send_email(email, subject, body)
+
+
+def _send_login_email(email: str, role: str) -> None:
+    user = get_user_by_email_and_role(email, role) or {}
+    full_name = user.get("full_name") or role.title()
+    subject = "RentalVerify sign-in notification"
+    body = (
+        f"Hello {full_name},\n\n"
+        f"We noticed a successful sign-in to your RentalVerify {role} account.\n"
+        "If this was you, no further action is needed.\n"
+        "If you did not sign in, please review your account security immediately.\n\n"
+        "Kind regards,\n"
+        "RentalVerify Team"
+    )
+    send_email(email, subject, body)
+
+
 def _save_upload(email: str, label: str, upload: UploadFile) -> str:
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     safe_name = upload.filename or f"{label}.bin"
@@ -121,7 +151,7 @@ def home(request: Request):
 @app.get("/login", response_class=HTMLResponse)
 def login_page(request: Request, role: str = Query(default="tenant")):
     role = role.lower()
-    if role not in {"tenant", "landlord", "admin"}:
+    if role not in {"tenant", "landlord"}:
         role = "tenant"
     return render(
         request,
@@ -139,12 +169,14 @@ def login_submit(
     password: str = Form(...),
 ):
     role = role.lower()
-    if role == "user":
+    if role in {"user", "admin"}:
         role = "tenant"
     if authenticate(email, password, role):
         request.session["user"] = {"role": role, "email": email, "name": role.title()}
         if role == "landlord":
             request.session["landlord_profile"] = get_landlord_profile_by_email(email) or demo_landlord_profile()
+        if role in {"tenant", "landlord"}:
+            _send_login_email(email, role)
         return redirect(dashboard_url_for_role(role))
     return render(
         request,
@@ -204,10 +236,19 @@ def register_submit(
     except Exception as exc:
         return render(request, "register.html", active_page="register", role=role, error=str(exc))
 
-    request.session["user"] = {"role": role, "email": email, "name": full_name}
-    if role == "landlord":
-        request.session["landlord_profile"] = account.get("landlord_profile")
-    return redirect(dashboard_url_for_role(role))
+    if role == "tenant":
+        request.session["user"] = {"role": role, "email": email, "name": full_name}
+        _send_registration_email(full_name, email, role)
+        return redirect(dashboard_url_for_role(role))
+
+    _send_registration_email(full_name, email, role)
+    return render(
+        request,
+        "login.html",
+        active_page="login",
+        role="landlord",
+        error="Registration received. Your landlord account is pending verification and cannot sign in yet.",
+    )
 
 
 @app.get("/search", response_class=HTMLResponse)
@@ -334,8 +375,12 @@ def landlord_login_submit(
     if authenticate(email, password, "landlord"):
         request.session["user"] = {"role": "landlord", "email": email, "name": "Landlord"}
         request.session["landlord_profile"] = get_landlord_profile_by_email(email) or demo_landlord_profile()
+        _send_login_email(email, "landlord")
         return redirect("/landlord/dashboard")
-    return redirect("/login?role=landlord")
+    account = get_user_by_email_and_role(email, "landlord")
+    if account and int(account.get("is_active", 0)) != 1:
+        return render(request, "login.html", active_page="login", role="landlord", error="Your landlord account is pending verification. Please wait for approval before signing in.")
+    return render(request, "login.html", active_page="login", role="landlord", error="Invalid credentials for that role.")
 
 
 @app.get("/tenant/login", response_class=HTMLResponse)
@@ -356,8 +401,12 @@ def tenant_login_submit(
 ):
     if authenticate(email, password, "tenant"):
         request.session["user"] = {"role": "tenant", "email": email, "name": "Tenant"}
+        _send_login_email(email, "tenant")
         return redirect("/tenant/dashboard")
-    return redirect("/login?role=tenant")
+    account = get_user_by_email_and_role(email, "tenant")
+    if account and int(account.get("is_active", 0)) != 1:
+        return render(request, "login.html", active_page="login", role="tenant", error="Your account is pending verification. Please wait for approval before signing in.")
+    return render(request, "login.html", active_page="login", role="tenant", error="Invalid credentials for that role.")
 
 
 @app.post("/user/login", response_class=HTMLResponse)
@@ -461,7 +510,7 @@ async def landlord_documents_submit(
 
 @app.get("/admin/login", response_class=HTMLResponse)
 def admin_login(request: Request):
-    return redirect("/login?role=admin")
+    return render(request, "admin_login.html", active_page="admin_login")
 
 
 @app.post("/admin/login", response_class=HTMLResponse)
@@ -473,7 +522,7 @@ def admin_login_submit(
     if authenticate(email, password, "admin"):
         request.session["user"] = {"role": "admin", "email": email, "name": "Admin"}
         return redirect("/admin/dashboard")
-    return redirect("/login?role=admin")
+    return render(request, "admin_login.html", active_page="admin_login", error="Invalid admin credentials.")
 
 
 @app.get("/admin/access", response_class=HTMLResponse)
@@ -482,10 +531,11 @@ def admin_access(request: Request):
 
 
 @app.get("/admin/dashboard", response_class=HTMLResponse)
-def admin_dashboard(request: Request):
+def admin_dashboard(request: Request, email_status: str = Query(default=""), email_message: str = Query(default="")):
     if not is_role(request, "admin"):
         return redirect("/login?role=admin")
     stats = dashboard_stats()
+    user = request.session.get("user") or {}
     return render(
         request,
         "admin_dashboard.html",
@@ -496,6 +546,9 @@ def admin_dashboard(request: Request):
             f"{stats['open_reports']} scam reports are open",
             f"{stats['escalated']} reports have been escalated",
         ],
+        email_status=email_status,
+        email_message=email_message,
+        email_recipient=user.get("email", ""),
     )
 
 
@@ -593,6 +646,21 @@ def admin_report_close(request: Request, report_id: int):
         return redirect("/login?role=admin")
     close_report(report_id, actor_user_id=None)
     return redirect("/admin/reports")
+
+
+@app.post("/admin/test-email")
+def admin_test_email(
+    request: Request,
+    recipient_email: str = Form(...),
+    subject: str = Form(default="RentalVerify test email"),
+    message: str = Form(default="This is a test from RentalVerify."),
+):
+    if not is_role(request, "admin"):
+        return redirect("/login?role=admin")
+    ok = send_email(recipient_email, subject, message)
+    status = "success" if ok else "error"
+    msg = "Test email sent." if ok else "Test email failed. Check SMTP settings and app password."
+    return redirect(f"/admin/dashboard?email_status={status}&email_message={msg}")
 
 
 @app.get("/404", response_class=HTMLResponse, status_code=404)

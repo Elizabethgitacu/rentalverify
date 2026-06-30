@@ -9,7 +9,6 @@
     <div class="auth-points">
       <div><strong>Tenants</strong><span>Search, report, and follow up.</span></div>
       <div><strong>Landlords</strong><span>Review verification status and documents.</span></div>
-      <div><strong>Admins</strong><span>Moderate submissions and reports.</span></div>
     </div>
   </aside>
 
@@ -24,7 +23,6 @@
         <select name="role" autocomplete="off">
           <option value="tenant" {% if role == 'tenant' %}selected{% endif %}>Tenant</option>
           <option value="landlord" {% if role == 'landlord' %}selected{% endif %}>Landlord</option>
-          <option value="admin" {% if role == 'admin' %}selected{% endif %}>Admin</option>
         </select>
       </label>
       <label class="full">

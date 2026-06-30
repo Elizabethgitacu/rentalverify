@@ -10,6 +10,8 @@ RentalVerify now has:
 
 ## Run locally
 
+Create a `.env` file for email notifications (see `.env.example`).
+
 ```powershell
 pip install -r requirements.txt
 python -m app.db.migrate
@@ -17,6 +19,10 @@ uvicorn app.main:app --reload
 ```
 
 The SQLite database file is created automatically at `rentalverify.sqlite3`.
+
+Email notifications:
+- registration confirmation emails
+- landlord approval/rejection emails
 
 Public auth pages:
 - `/login`

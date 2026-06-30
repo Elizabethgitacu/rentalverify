@@ -9,6 +9,7 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Iterator
 
+from app.mailer import send_registration_email, send_verification_email
 
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -528,6 +529,7 @@ def create_account(form: dict[str, str]) -> dict[str, Any]:
     db_role = role
     with _connect() as conn:
         cur = conn.cursor()
+        is_active = 0 if role == "landlord" else 1
         cur.execute(
             """
             INSERT INTO users (
@@ -535,7 +537,7 @@ def create_account(form: dict[str, str]) -> dict[str, Any]:
                 national_id_number, m_pesa_number, profile_status,
                 is_active, created_at, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, NULL, NULL, 'incomplete', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            VALUES (?, ?, ?, ?, ?, NULL, NULL, 'incomplete', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             """,
             (
                 form["full_name"],
@@ -543,6 +545,7 @@ def create_account(form: dict[str, str]) -> dict[str, Any]:
                 form.get("phone_number", ""),
                 form["password"],
                 db_role,
+                is_active,
             ),
         )
         user_id = cur.lastrowid
@@ -587,6 +590,7 @@ def create_account(form: dict[str, str]) -> dict[str, Any]:
         "phone_number": form.get("phone_number", ""),
         "landlord_profile": landlord_profile,
     }
+    send_registration_email(form["full_name"], form["email"], role)
     return account
 
 
@@ -877,17 +881,32 @@ def authenticate(email: str, password: str, role: str) -> bool:
     placeholders = ", ".join("?" for _ in roles)
     row = _fetchone(
         f"""
-        SELECT id, full_name, email, role, password_hash
+        SELECT id, full_name, email, role, password_hash, is_active
         FROM users
         WHERE LOWER(email) = LOWER(?) AND role IN ({placeholders})
         LIMIT 1
         """,
         (email, *roles),
     )
-    if not row:
+    if not row or int(row.get("is_active", 0)) != 1:
         return False
     stored_hash = row["password_hash"]
     return password == stored_hash
+
+
+def get_user_by_email_and_role(email: str, role: str) -> dict[str, Any] | None:
+    role = _normalize_role(role)
+    roles = ("tenant", "user") if role == "tenant" else (role,)
+    placeholders = ", ".join("?" for _ in roles)
+    return _fetchone(
+        f"""
+        SELECT id, full_name, email, role, is_active
+        FROM users
+        WHERE LOWER(email) = LOWER(?) AND role IN ({placeholders})
+        LIMIT 1
+        """,
+        (email, *roles),
+    )
 
 
 def dashboard_stats() -> dict[str, int]:
@@ -989,7 +1008,7 @@ def _record_audit(
 
 def approve_landlord(landlord_id: int, actor_user_id: int | None = None) -> None:
     before = _fetchone(
-        "SELECT id, full_name, verification_status FROM landlord_profiles WHERE id = ? LIMIT 1",
+        "SELECT id, user_id, full_name, email, verification_status FROM landlord_profiles WHERE id = ? LIMIT 1",
         (landlord_id,),
     )
     if not before:
@@ -1002,13 +1021,17 @@ def approve_landlord(landlord_id: int, actor_user_id: int | None = None) -> None
         """,
         (landlord_id,),
     )
+    if before.get("user_id"):
+        _execute("UPDATE users SET is_active = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (before["user_id"],))
     _record_admin_action("approve_landlord", "landlord_profile", landlord_id, "Approved landlord profile")
     _record_audit(actor_user_id, "approve_landlord", "landlord_profile", landlord_id, before, {"verification_status": "verified"})
+    if before.get("email"):
+        send_verification_email(before["full_name"], before["email"], "verified")
 
 
 def reject_landlord(landlord_id: int, reason: str = "", actor_user_id: int | None = None) -> None:
     before = _fetchone(
-        "SELECT id, full_name, verification_status FROM landlord_profiles WHERE id = ? LIMIT 1",
+        "SELECT id, user_id, full_name, email, verification_status FROM landlord_profiles WHERE id = ? LIMIT 1",
         (landlord_id,),
     )
     if not before:
@@ -1021,8 +1044,12 @@ def reject_landlord(landlord_id: int, reason: str = "", actor_user_id: int | Non
         """,
         (landlord_id,),
     )
+    if before.get("user_id"):
+        _execute("UPDATE users SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (before["user_id"],))
     _record_admin_action("reject_landlord", "landlord_profile", landlord_id, reason)
     _record_audit(actor_user_id, "reject_landlord", "landlord_profile", landlord_id, before, {"verification_status": "rejected"})
+    if before.get("email"):
+        send_verification_email(before["full_name"], before["email"], "rejected")
 
 
 def escalate_report(report_id: int, actor_user_id: int | None = None) -> None:
