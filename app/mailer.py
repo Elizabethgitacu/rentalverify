@@ -66,6 +66,18 @@ def send_registration_email(full_name: str, email: str, role: str) -> bool:
     return send_email(email, subject, body)
 
 
+def send_admin_new_registration_email(admin_email: str, full_name: str, email: str, role: str) -> bool:
+    subject = f"New {role} registration on RentalVerify"
+    body = (
+        f"A new {role} account was just created.\n\n"
+        f"Name: {full_name}\n"
+        f"Email: {email}\n"
+        f"Role: {role}\n\n"
+        + ("This landlord is now pending your review in the admin dashboard.\n" if role == "landlord" else "")
+    )
+    return send_email(admin_email, subject, body)
+
+
 def send_verification_email(full_name: str, email: str, status: str) -> bool:
     pretty_status = status.replace("_", " ").strip().title()
     subject = f"RentalVerify account {pretty_status.lower()}"

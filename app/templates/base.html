@@ -17,6 +17,7 @@
       <nav class="nav" aria-label="Primary">
         <a class="{% if active_page == 'home' %}active{% endif %}" href="/">Home</a>
         <a class="{% if active_page == 'search' %}active{% endif %}" href="/search">Search</a>
+        <a class="{% if active_page == 'bnb' %}active{% endif %}" href="/bnb">Stays</a>
         <a class="{% if active_page == 'report' %}active{% endif %}" href="/report">Report</a>
         {% if current_user %}
         <a class="{% if active_page and 'dashboard' in active_page %}active{% endif %}" href="{{ dashboard_url if dashboard_url else '/' }}">Dashboard</a>

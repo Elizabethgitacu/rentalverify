@@ -459,6 +459,274 @@ def _seed_data() -> None:
         conn.commit()
 
 
+BNB_LISTING_DETAILS: list[dict[str, Any]] = [
+    {
+        "name": "Kilimani Sky Loft",
+        "description": "Bright 1-bedroom loft with balcony views over Kilimani. Verified through RentalVerify.",
+        "directions": "Off Kilimani Road, blue perimeter wall, apartment block B, unit 4.",
+        "image_path": "/static/images/bnb/listing-1.svg",
+    },
+    {
+        "name": "Westlands Urban Suite",
+        "description": "Modern suite behind Sarit Centre with fast Wi-Fi and gym access. Verified through RentalVerify.",
+        "directions": "Off Mwanzi Road, 5 minutes' walk from Westlands roundabout, gate 2.",
+        "image_path": "/static/images/bnb/listing-2.svg",
+    },
+    {
+        "name": "Kileleshwa Garden BnB",
+        "description": "Quiet 2-bedroom garden unit with a dedicated workspace. Verified through RentalVerify.",
+        "directions": "Along Kileleshwa Drive, opposite the police post, green gate.",
+        "image_path": "/static/images/bnb/listing-3.svg",
+    },
+    {
+        "name": "South B City Nest",
+        "description": "Compact self-check-in nest close to Mombasa Road access. Verified through RentalVerify.",
+        "directions": "Near South B shopping centre, white block, gate 3.",
+        "image_path": "/static/images/bnb/listing-4.svg",
+    },
+    {
+        "name": "Lavington Family Villa",
+        "description": "Spacious 3-bedroom villa for families or groups, with a private garden. Verified through RentalVerify.",
+        "directions": "Along James Gichuru Road, opposite Lavington Mall, house 12.",
+        "image_path": "/static/images/bnb/listing-5.svg",
+        "area": "Lavington, Nairobi",
+        "address": "James Gichuru Road, Lavington",
+        "nightly_rate": 12000,
+        "max_guests": 6,
+        "bedrooms": 3,
+        "baths": 3,
+        "features": ["Private garden", "Parking", "Backup generator", "Wi-Fi"],
+        "host_name": "Peter Kamau",
+        "host_phone": "+254 722 998 774",
+        "availability_status": "available",
+    },
+    {
+        "name": "Karen Countryside Bungalow",
+        "description": "Roomy countryside bungalow with plenty of outdoor space. Verified through RentalVerify.",
+        "directions": "Off Karen Road near Karen Country Club, wooden gate.",
+        "image_path": "/static/images/bnb/listing-6.svg",
+        "area": "Karen, Nairobi",
+        "address": "Karen Road, Karen",
+        "nightly_rate": 15000,
+        "max_guests": 8,
+        "bedrooms": 4,
+        "baths": 3,
+        "features": ["Garden", "Fireplace", "Parking", "Borehole water"],
+        "host_name": "James Mwangi",
+        "host_phone": "+254 700 887 321",
+        "availability_status": "few left",
+    },
+    {
+        "name": "Langata Wildlife View",
+        "description": "2-bedroom apartment a short drive from the Nairobi National Park gate. Verified through RentalVerify.",
+        "directions": "Opposite Wilson Airport main gate, 2nd floor apartment.",
+        "image_path": "/static/images/bnb/listing-7.svg",
+        "area": "Langata, Nairobi",
+        "address": "Langata Road, Langata",
+        "nightly_rate": 6000,
+        "max_guests": 4,
+        "bedrooms": 2,
+        "baths": 1,
+        "features": ["Wi-Fi", "Parking", "Balcony"],
+        "host_name": "Susan Achieng",
+        "host_phone": "+254 733 456 129",
+        "availability_status": "available",
+    },
+    {
+        "name": "Upper Hill Business Suite",
+        "description": "Glass-fronted business suite close to Nairobi Hospital. Verified through RentalVerify.",
+        "directions": "Near Nairobi Hospital, 3rd floor, glass-fronted building.",
+        "image_path": "/static/images/bnb/listing-8.svg",
+        "area": "Upper Hill, Nairobi",
+        "address": "Hospital Road, Upper Hill",
+        "nightly_rate": 8500,
+        "max_guests": 2,
+        "bedrooms": 1,
+        "baths": 1,
+        "features": ["Wi-Fi", "Workspace", "24/7 security"],
+        "host_name": "Kevin Njoroge",
+        "host_phone": "+254 712 665 903",
+        "availability_status": "available",
+    },
+    {
+        "name": "Runda Serenity Home",
+        "description": "Large 5-bedroom home for big groups or family reunions. Verified through RentalVerify.",
+        "directions": "Enter via Runda main gate, follow signage to House 24.",
+        "image_path": "/static/images/bnb/listing-9.svg",
+        "area": "Runda, Nairobi",
+        "address": "Runda Estate, Kiambu Road",
+        "nightly_rate": 18000,
+        "max_guests": 10,
+        "bedrooms": 5,
+        "baths": 4,
+        "features": ["Garden", "Pool", "Parking", "Backup generator", "Wi-Fi"],
+        "host_name": "Alice Wanjiru",
+        "host_phone": "+254 700 213 456",
+        "availability_status": "available",
+    },
+    {
+        "name": "Ngong Road Budget Stay",
+        "description": "Simple, affordable studio-style stay near Adams Arcade. Verified through RentalVerify.",
+        "directions": "Next to Adams Arcade, entrance behind the petrol station.",
+        "image_path": "/static/images/bnb/listing-10.svg",
+        "area": "Ngong Road, Nairobi",
+        "address": "Ngong Road, near Adams Arcade",
+        "nightly_rate": 2800,
+        "max_guests": 2,
+        "bedrooms": 1,
+        "baths": 1,
+        "features": ["Wi-Fi", "Self check-in"],
+        "host_name": "Brian Kiptoo",
+        "host_phone": "+254 722 340 187",
+        "availability_status": "available",
+    },
+]
+
+
+def _seed_bnb_listings() -> None:
+    with _connect() as conn:
+        cur = conn.cursor()
+        for details in BNB_LISTING_DETAILS:
+            cur.execute("SELECT id FROM bnb_listings WHERE name = ?", (details["name"],))
+            existing = cur.fetchone()
+            if existing:
+                cur.execute(
+                    """
+                    UPDATE bnb_listings
+                    SET description = ?, directions = ?, image_path = ?, verification_status = 'verified'
+                    WHERE id = ? AND (description = '' OR description IS NULL)
+                    """,
+                    (details["description"], details["directions"], details["image_path"], existing["id"]),
+                )
+                continue
+            cur.execute(
+                """
+                INSERT INTO bnb_listings (
+                    name, area, address, nightly_rate, max_guests, bedrooms, baths,
+                    features_json, host_name, host_phone, availability_status,
+                    description, directions, image_path, verification_status,
+                    created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'verified', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """,
+                (
+                    details["name"],
+                    details["area"],
+                    details["address"],
+                    details["nightly_rate"],
+                    details["max_guests"],
+                    details["bedrooms"],
+                    details["baths"],
+                    json.dumps(details["features"]),
+                    details["host_name"],
+                    details["host_phone"],
+                    details["availability_status"],
+                    details["description"],
+                    details["directions"],
+                    details["image_path"],
+                ),
+            )
+        conn.commit()
+
+
+CANONICAL_TABLE_SQL: dict[str, str] = {
+    "landlord_profiles": """
+        CREATE TABLE landlord_profiles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+            full_name TEXT NOT NULL,
+            email TEXT,
+            phone_number TEXT NOT NULL,
+            national_id_number TEXT NOT NULL,
+            m_pesa_number TEXT NOT NULL,
+            property_location TEXT NOT NULL,
+            ownership_notes TEXT,
+            verification_status TEXT NOT NULL DEFAULT 'pending' CHECK (verification_status IN ('pending', 'verified', 'rejected')),
+            verified_at TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
+    "search_logs": """
+        CREATE TABLE search_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            search_term TEXT NOT NULL,
+            search_type TEXT NOT NULL DEFAULT 'Any',
+            location TEXT,
+            result_status TEXT NOT NULL,
+            matched_landlord_id INTEGER REFERENCES landlord_profiles(id) ON DELETE SET NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
+    "admin_actions": """
+        CREATE TABLE admin_actions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            admin_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+            action_type TEXT NOT NULL,
+            entity_type TEXT NOT NULL,
+            entity_id INTEGER,
+            notes TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
+    "audit_logs": """
+        CREATE TABLE audit_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            actor_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+            action TEXT NOT NULL,
+            entity_type TEXT NOT NULL,
+            entity_id INTEGER,
+            before_state TEXT,
+            after_state TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
+    "landlord_documents": """
+        CREATE TABLE landlord_documents (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            landlord_profile_id INTEGER NOT NULL REFERENCES landlord_profiles(id) ON DELETE CASCADE,
+            document_type TEXT NOT NULL,
+            file_path TEXT NOT NULL,
+            uploaded_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """,
+}
+
+
+def _existing_tables(cur: sqlite3.Cursor) -> set[str]:
+    return {row[0] for row in cur.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+
+
+def _has_dangling_foreign_key(cur: sqlite3.Cursor, table: str, existing_tables: set[str]) -> bool:
+    try:
+        fks = cur.execute(f"PRAGMA foreign_key_list('{table}')").fetchall()
+    except sqlite3.OperationalError:
+        return False
+    return any(fk[2] not in existing_tables for fk in fks)
+
+
+def _rebuild_table(cur: sqlite3.Cursor, table: str, create_sql: str) -> None:
+    """Recreate a table whose schema references a missing (e.g. renamed/dropped)
+    foreign-key table, copying over any columns that still match by name."""
+    legacy_name = f"{table}__legacy_repair"
+    cur.execute(f"ALTER TABLE {table} RENAME TO {legacy_name}")
+    cur.execute(create_sql)
+    old_columns = {row[1] for row in cur.execute(f"PRAGMA table_info({legacy_name})").fetchall()}
+    new_columns = [row[1] for row in cur.execute(f"PRAGMA table_info({table})").fetchall()]
+    common_columns = [c for c in new_columns if c in old_columns]
+    if common_columns:
+        columns_sql = ", ".join(common_columns)
+        cur.execute(f"INSERT INTO {table} ({columns_sql}) SELECT {columns_sql} FROM {legacy_name}")
+    cur.execute(f"DROP TABLE {legacy_name}")
+
+
+def _repair_dangling_foreign_keys(conn: sqlite3.Connection) -> None:
+    cur = conn.cursor()
+    for table, create_sql in CANONICAL_TABLE_SQL.items():
+        existing_tables = _existing_tables(cur)
+        if table in existing_tables and _has_dangling_foreign_key(cur, table, existing_tables):
+            _rebuild_table(cur, table, create_sql)
+
+
 def init_db() -> None:
     with _connect() as conn:
         conn.executescript(SCHEMA_SQL)
@@ -468,47 +736,16 @@ def init_db() -> None:
             "ALTER TABLE users ADD COLUMN m_pesa_number TEXT",
             "ALTER TABLE users ADD COLUMN profile_status TEXT NOT NULL DEFAULT 'incomplete'",
             "ALTER TABLE users ADD COLUMN profile_completed_at TEXT",
+            "ALTER TABLE bnb_listings ADD COLUMN description TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE bnb_listings ADD COLUMN directions TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE bnb_listings ADD COLUMN image_path TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE bnb_listings ADD COLUMN verification_status TEXT NOT NULL DEFAULT 'verified'",
         ]:
             try:
                 cur.execute(column_sql)
             except sqlite3.OperationalError:
                 pass
-        cur.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='landlord_profiles'")
-        landlord_schema = (cur.fetchone() or {"sql": ""})["sql"] or ""
-        if "users_legacy" in landlord_schema:
-            cur.execute("ALTER TABLE landlord_profiles RENAME TO landlord_profiles_legacy")
-            cur.execute(
-                """
-                CREATE TABLE landlord_profiles (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-                    full_name TEXT NOT NULL,
-                    email TEXT,
-                    phone_number TEXT NOT NULL,
-                    national_id_number TEXT NOT NULL,
-                    m_pesa_number TEXT NOT NULL,
-                    property_location TEXT NOT NULL,
-                    ownership_notes TEXT,
-                    verification_status TEXT NOT NULL DEFAULT 'pending' CHECK (verification_status IN ('pending', 'verified', 'rejected')),
-                    verified_at TEXT,
-                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-                )
-                """
-            )
-            cur.execute(
-                """
-                INSERT INTO landlord_profiles (
-                    id, user_id, full_name, email, phone_number, national_id_number, m_pesa_number,
-                    property_location, ownership_notes, verification_status, verified_at, created_at, updated_at
-                )
-                SELECT
-                    id, NULL, full_name, email, phone_number, national_id_number, m_pesa_number,
-                    property_location, ownership_notes, verification_status, verified_at, created_at, updated_at
-                FROM landlord_profiles_legacy
-                """
-            )
-            cur.execute("DROP TABLE landlord_profiles_legacy")
+        _repair_dangling_foreign_keys(conn)
         cur.execute("SELECT COUNT(*) AS count FROM users WHERE role = 'admin'")
         if cur.fetchone()[0] == 0:
             cur.execute(
@@ -519,6 +756,7 @@ def init_db() -> None:
                 ("Admin", "admin@rentalverify.ke", "", "admin-password"),
             )
         conn.commit()
+    _seed_bnb_listings()
 
 
 def create_account(form: dict[str, str]) -> dict[str, Any]:
@@ -592,6 +830,11 @@ def create_account(form: dict[str, str]) -> dict[str, Any]:
     }
     send_registration_email(form["full_name"], form["email"], role)
     return account
+
+
+def get_admin_emails() -> list[str]:
+    rows = _fetchall("SELECT email FROM users WHERE role = 'admin' AND is_active = 1")
+    return [row["email"] for row in rows if row.get("email")]
 
 
 def get_tenant_profile_by_email(email: str) -> dict[str, Any] | None:
@@ -772,14 +1015,8 @@ def search_landlord(search_term: str) -> dict[str, Any]:
             l.national_id_number AS nid,
             l.m_pesa_number AS m_pesa,
             l.property_location AS location,
-            l.verification_status AS status,
-            COALESCE(r.report_count, 0) AS reports
+            l.verification_status AS raw_status
         FROM landlord_profiles l
-        LEFT JOIN (
-            SELECT landlord_name, COUNT(*) AS report_count
-            FROM scam_reports
-            GROUP BY landlord_name
-        ) r ON LOWER(r.landlord_name) = LOWER(l.full_name)
         WHERE
             LOWER(l.full_name) LIKE LOWER(?)
             OR LOWER(l.phone_number) LIKE LOWER(?)
@@ -790,6 +1027,33 @@ def search_landlord(search_term: str) -> dict[str, Any]:
         """,
         (like, like, like, like),
     )
+
+    report_counts = _fetchone(
+        """
+        SELECT
+            COUNT(*) AS total,
+            SUM(CASE WHEN status != 'closed' THEN 1 ELSE 0 END) AS active
+        FROM scam_reports
+        WHERE
+            LOWER(landlord_name) LIKE LOWER(?)
+            OR LOWER(landlord_phone) LIKE LOWER(?)
+            OR LOWER(national_id_number) LIKE LOWER(?)
+            OR LOWER(m_pesa_number) LIKE LOWER(?)
+        """,
+        (like, like, like, like),
+    ) or {"total": 0, "active": 0}
+    total_reports = int(report_counts["total"] or 0)
+    active_reports = int(report_counts["active"] or 0)
+
+    if active_reports > 0:
+        # Any open/under-review/escalated scam report against this identifier
+        # overrides admin verification -- renters must see the risk first.
+        verification = "Scam"
+    elif row and row["raw_status"] == "verified":
+        verification = "Verified"
+    else:
+        verification = "Unverified"
+
     if not row:
         return {
             "name": search_term,
@@ -797,11 +1061,27 @@ def search_landlord(search_term: str) -> dict[str, Any]:
             "nid": "",
             "m_pesa": "",
             "location": "",
-            "status": "Not Found",
-            "reports": 0,
+            "status": verification,
+            "record_note": "No landlord record matches this search." if verification != "Scam" else "No landlord record, but this identifier has scam reports filed against it.",
+            "reports": total_reports,
         }
-    row["status"] = _pretty_status(str(row["status"]))
-    return row
+
+    record_notes = {
+        "pending": "Registered but still awaiting admin verification.",
+        "rejected": "Registration was reviewed and rejected by an admin.",
+        "verified": "Confirmed by admin review.",
+    }
+    return {
+        "id": row["id"],
+        "name": row["name"],
+        "phone": row["phone"],
+        "nid": row["nid"],
+        "m_pesa": row["m_pesa"],
+        "location": row["location"],
+        "status": verification,
+        "record_note": record_notes.get(row["raw_status"], "") if verification != "Scam" else "This landlord has active scam reports filed against them.",
+        "reports": total_reports,
+    }
 
 
 def search_timeline() -> list[dict[str, str]]:
@@ -1088,6 +1368,84 @@ def close_report(report_id: int, actor_user_id: int | None = None) -> None:
     )
     _record_admin_action("close_report", "scam_report", report_id, "Closed report")
     _record_audit(actor_user_id, "close_report", "scam_report", report_id, before, {"status": "closed"})
+
+
+def list_bnb_listings(area: str = "", guests: int = 0, max_price: int = 0) -> list[dict[str, Any]]:
+    query = """
+        SELECT id, name, area, address, nightly_rate, max_guests, bedrooms, baths,
+               features_json, host_name, host_phone, availability_status,
+               description, directions, image_path
+        FROM bnb_listings
+        WHERE verification_status = 'verified'
+    """
+    params: list[Any] = []
+    if area.strip():
+        query += " AND LOWER(area) LIKE LOWER(?)"
+        params.append(f"%{area.strip()}%")
+    if guests > 0:
+        query += " AND max_guests >= ?"
+        params.append(guests)
+    if max_price > 0:
+        query += " AND nightly_rate <= ?"
+        params.append(max_price)
+    query += " ORDER BY id"
+    rows = _fetchall(query, tuple(params))
+    for row in rows:
+        row["features"] = json.loads(row.pop("features_json") or "[]")
+    return rows
+
+
+def get_bnb_listing(listing_id: int) -> dict[str, Any] | None:
+    row = _fetchone(
+        """
+        SELECT id, name, area, address, nightly_rate, max_guests, bedrooms, baths,
+               features_json, host_name, host_phone, availability_status,
+               description, directions, image_path
+        FROM bnb_listings
+        WHERE id = ? AND verification_status = 'verified'
+        """,
+        (listing_id,),
+    )
+    if row:
+        row["features"] = json.loads(row.pop("features_json") or "[]")
+    return row
+
+
+def create_booking_request(form: dict[str, Any]) -> str:
+    reference = new_reference()
+    _execute(
+        """
+        INSERT INTO booking_requests
+            (listing_id, guest_name, guest_email, guest_phone, check_in, check_out,
+             guests, special_requests, status, reference_number, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        """,
+        (
+            form["listing_id"],
+            form["guest_name"],
+            form["guest_email"],
+            form["guest_phone"],
+            form["check_in"],
+            form["check_out"],
+            form["guests"],
+            form.get("special_requests", ""),
+            reference,
+        ),
+    )
+    return reference
+
+
+def get_booking_by_reference(reference: str) -> dict[str, Any] | None:
+    return _fetchone(
+        """
+        SELECT b.reference_number, b.status, b.check_in, b.check_out, b.guests,
+               l.name AS listing_name, l.area, l.nightly_rate
+        FROM booking_requests b
+        JOIN bnb_listings l ON l.id = b.listing_id
+        WHERE b.reference_number = ?
+        """,
+        (reference,),
+    )
 
 
 init_db()

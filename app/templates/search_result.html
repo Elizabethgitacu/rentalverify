@@ -21,6 +21,10 @@
       <span class="risk-score">Risk summary</span>
     </div>
 
+    {% if landlord.record_note %}
+    <p class="record-note">{{ landlord.record_note }}</p>
+    {% endif %}
+
     <div class="detail-grid">
       <div><span>National ID</span><strong>{{ landlord.nid or '—' }}</strong></div>
       <div><span>M-Pesa</span><strong>{{ landlord.m_pesa or '—' }}</strong></div>
@@ -29,7 +33,11 @@
     </div>
 
     <div class="warning">
-      A missing record does not mean the landlord is safe. Confirm documents before making any payment.
+      {% if landlord.status == 'Scam' %}
+      This identifier has active scam reports. Do not send money or a deposit — verify in person and report to the police if you were targeted.
+      {% else %}
+      A missing or unverified record does not mean the landlord is safe. Confirm documents before making any payment.
+      {% endif %}
     </div>
   </article>
 
@@ -51,9 +59,9 @@
   <aside class="note-box search-note">
     <h3>Interpretation</h3>
     <ul class="plain-list">
-      <li>Verified means admin review confirmed the profile.</li>
-      <li>Reported means one or more scams have been logged.</li>
-      <li>Not found means there is not enough data yet.</li>
+      <li><strong>Verified</strong> means admin review confirmed the profile and there are no active scam reports.</li>
+      <li><strong>Scam</strong> means an open, under-review, or escalated scam report is on file for this identifier.</li>
+      <li><strong>Unverified</strong> means there is no confirmed record — this includes pending/rejected registrations and identifiers with no record at all.</li>
     </ul>
   </aside>
 

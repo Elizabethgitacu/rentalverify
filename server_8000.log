@@ -1,0 +1,22 @@
+INFO:     Will watch for changes in these directories: ['C:\\Users\\PC\\rentalverify']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [22608] using WatchFiles
+INFO:     Started server process [9760]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:61348 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61349 - "GET /bnb HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61350 - "GET /bnb HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61740 - "GET /bnb HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61740 - "GET /static/css/main.css HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:61740 - "GET /static/images/bnb/listing-1.svg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58954 - "GET /static/images/bnb/listing-2.svg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52648 - "GET /static/images/bnb/listing-3.svg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50692 - "GET /static/images/bnb/listing-4.svg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62440 - "GET /static/images/bnb/listing-6.svg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59471 - "GET /static/images/bnb/listing-5.svg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55143 - "GET /static/images/bnb/listing-7.svg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51135 - "GET /static/images/bnb/listing-8.svg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49521 - "GET /static/images/bnb/listing-9.svg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58063 - "GET /static/images/bnb/listing-10.svg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64299 - "GET / HTTP/1.1" 200 OK

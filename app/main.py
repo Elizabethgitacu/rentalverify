@@ -7,16 +7,20 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-from app.mailer import send_email
+from app.mailer import send_admin_new_registration_email, send_email
 from app.storage import (
     add_landlord_documents,
     approve_landlord,
     authenticate,
     close_report,
     create_account,
+    create_booking_request,
     create_scam_report,
     dashboard_stats,
     demo_store,
+    get_admin_emails,
+    get_bnb_listing,
+    get_booking_by_reference,
     get_landlord_documents,
     get_landlord_profile_by_email,
     get_pending_landlords,
@@ -28,6 +32,7 @@ from app.storage import (
     get_user_dashboard_overview,
     homepage_stats,
     escalate_report,
+    list_bnb_listings,
     log_search,
     reject_landlord,
     search_landlord,
@@ -99,6 +104,11 @@ def _send_registration_email(full_name: str, email: str, role: str) -> None:
         "RentalVerify Team"
     )
     send_email(email, subject, body)
+
+
+def _notify_admins_of_registration(full_name: str, email: str, role: str) -> None:
+    for admin_email in get_admin_emails():
+        send_admin_new_registration_email(admin_email, full_name, email, role)
 
 
 def _send_login_email(email: str, role: str) -> None:
@@ -239,9 +249,11 @@ def register_submit(
     if role == "tenant":
         request.session["user"] = {"role": role, "email": email, "name": full_name}
         _send_registration_email(full_name, email, role)
+        _notify_admins_of_registration(full_name, email, role)
         return redirect(dashboard_url_for_role(role))
 
     _send_registration_email(full_name, email, role)
+    _notify_admins_of_registration(full_name, email, role)
     return render(
         request,
         "login.html",
@@ -302,6 +314,84 @@ def search_result(request: Request):
         active_page="search",
         landlord=landlord,
         report_timeline=search_timeline(),
+    )
+
+
+@app.get("/bnb", response_class=HTMLResponse)
+def bnb_page(
+    request: Request,
+    area: str = Query(default=""),
+    guests: int = Query(default=0),
+    max_price: int = Query(default=0),
+):
+    listings = list_bnb_listings(area=area, guests=guests, max_price=max_price)
+    return render(
+        request,
+        "bnb.html",
+        active_page="bnb",
+        listings=listings,
+        filters={"area": area, "guests": guests or "", "max_price": max_price or ""},
+        featured_listing=listings[0] if listings else None,
+    )
+
+
+@app.post("/bnb/book", response_class=HTMLResponse)
+def bnb_book_submit(
+    request: Request,
+    listing_id: int = Form(...),
+    guest_name: str = Form(...),
+    guest_email: str = Form(...),
+    guest_phone: str = Form(...),
+    guests: int = Form(...),
+    check_in: str = Form(...),
+    check_out: str = Form(...),
+    special_requests: str = Form(""),
+):
+    listing = get_bnb_listing(listing_id)
+    error = None
+    if not listing:
+        error = "Select a valid listing to book."
+    elif check_in >= check_out:
+        error = "Check-out date must be after check-in date."
+    elif guests > listing["max_guests"]:
+        error = f"{listing['name']} sleeps up to {listing['max_guests']} guests."
+
+    if error:
+        listings = list_bnb_listings()
+        return render(
+            request,
+            "bnb.html",
+            active_page="bnb",
+            listings=listings,
+            filters={"area": "", "guests": guests, "max_price": ""},
+            featured_listing=listing,
+            error=error,
+        )
+
+    reference = create_booking_request(
+        {
+            "listing_id": listing_id,
+            "guest_name": guest_name,
+            "guest_email": guest_email,
+            "guest_phone": guest_phone,
+            "check_in": check_in,
+            "check_out": check_out,
+            "guests": guests,
+            "special_requests": special_requests,
+        }
+    )
+    return redirect(f"/bnb/confirmation?reference={reference}")
+
+
+@app.get("/bnb/confirmation", response_class=HTMLResponse)
+def bnb_confirmation(request: Request, reference: str = Query(default="")):
+    booking = get_booking_by_reference(reference) if reference else None
+    return render(
+        request,
+        "bnb_confirmation.html",
+        active_page="bnb",
+        booking=booking,
+        reference=reference,
     )
 
 

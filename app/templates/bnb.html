@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}BnB Apartments - RentalVerify{% endblock %}
+{% block content %}
+<section class="page-head bnb-head">
+  <div>
+    <span class="eyebrow">BnB booking</span>
+    <h1>Find a verified stay near you</h1>
+    <p>These are rental BnBs and apartments that are verified through RentalVerify. Browse available stays, compare the essentials, then reserve a place in minutes.</p>
+  </div>
+  <div class="result-head-card">
+    <span>Verified stays</span>
+    <strong>{{ listings|length }}</strong>
+    <p>Every listing below has passed RentalVerify's verification check.</p>
+  </div>
+</section>
+
+<section class="search-layout bnb-layout">
+  <section class="card form-card">
+    <div class="table-head">
+      <div>
+        <div class="panel-label">Filter stays</div>
+        <h2>Refine your search</h2>
+      </div>
+    </div>
+    <form class="form-grid" method="get" action="/bnb">
+      <label>
+        Area
+        <input type="text" name="area" value="{{ filters.area }}" placeholder="Kilimani, Westlands, Kileleshwa...">
+      </label>
+      <label>
+        Guests
+        <input type="number" name="guests" min="1" value="{{ filters.guests }}">
+      </label>
+      <label class="full">
+        Max nightly price (KES)
+        <input type="number" name="max_price" min="0" value="{{ filters.max_price }}" placeholder="Optional">
+      </label>
+      <div class="button-row full">
+        <button class="btn btn-primary" type="submit">Update listings</button>
+        <a class="btn btn-secondary" href="/bnb">Reset</a>
+      </div>
+    </form>
+  </section>
+
+  <aside class="note-box search-note">
+    <h3>Booking note</h3>
+    <p>Choose a stay, then fill the booking form below. This creates a booking request reference for follow-up.</p>
+    <ul class="plain-list">
+      <li>Capacity limits are enforced before saving.</li>
+      <li>Check-in must be earlier than check-out.</li>
+      <li>All requests are stored in SQLite.</li>
+    </ul>
+  </aside>
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <h2>Available apartments and BnBs</h2>
+    <p>Curated listings around Nairobi with practical details only.</p>
+  </div>
+
+  {% if listings %}
+  <div class="bnb-grid">
+    {% for listing in listings %}
+    <article class="card bnb-card">
+      <div class="bnb-card-image">
+        <img src="{{ listing.image_path }}" alt="{{ listing.name }}" loading="lazy">
+        <span class="status verified bnb-verified-badge">Verified</span>
+      </div>
+      <div class="bnb-card-top">
+        <div>
+          <div class="panel-label">{{ listing.area }}</div>
+          <h3>{{ listing.name }}</h3>
+        </div>
+        <span class="status {{ listing.availability_status|lower|replace(' ', '-') }}">{{ listing.availability_status }}</span>
+      </div>
+      <p>{{ listing.description }}</p>
+      <p class="bnb-directions"><strong>Directions:</strong> {{ listing.directions }}</p>
+      <div class="detail-grid bnb-details">
+        <div><span>Nightly rate</span><strong>KES {{ listing.nightly_rate }}</strong></div>
+        <div><span>Capacity</span><strong>{{ listing.max_guests }} guests</strong></div>
+        <div><span>Rooms</span><strong>{{ listing.bedrooms }} bed / {{ listing.baths }} bath</strong></div>
+        <div><span>Host</span><strong>{{ listing.host_name }}</strong></div>
+      </div>
+      <div class="tag-row">
+        {% for feature in listing.features %}
+        <span class="tag">{{ feature }}</span>
+        {% endfor %}
+      </div>
+      <div class="button-row bnb-contact-row">
+        <a class="btn btn-secondary btn-sm" href="tel:{{ listing.host_phone|replace(' ', '') }}">Call {{ listing.host_phone }}</a>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <section class="card empty-card">
+    <h3>No listings match your filters.</h3>
+    <p>Try a wider area or reduce the maximum price.</p>
+  </section>
+  {% endif %}
+</section>
+
+<section class="section split bnb-booking-section">
+  <article class="card booking-card">
+    <div class="panel-label">Book a stay</div>
+    <h2>Reserve your chosen listing</h2>
+    <p>Fill in your booking details. A reference number will be generated once the request is saved.</p>
+
+    {% if error %}
+    <div class="form-alert">{{ error }}</div>
+    {% endif %}
+
+    <form class="form-grid booking-form" method="post" action="/bnb/book">
+      <label class="full">
+        Listing
+        <select name="listing_id" required>
+          {% for listing in listings %}
+          <option value="{{ listing.id }}" {% if featured_listing and listing.id == featured_listing.id %}selected{% endif %}>{{ listing.name }} — {{ listing.area }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        Guest name
+        <input type="text" name="guest_name" required placeholder="Full name">
+      </label>
+      <label>
+        Guest email
+        <input type="email" name="guest_email" required placeholder="name@example.com">
+      </label>
+      <label>
+        Guest phone
+        <input type="text" name="guest_phone" required placeholder="07xx xxx xxx">
+      </label>
+      <label>
+        Guests
+        <input type="number" name="guests" min="1" value="{{ filters.guests }}" required>
+      </label>
+      <label>
+        Check-in
+        <input type="date" name="check_in" required>
+      </label>
+      <label>
+        Check-out
+        <input type="date" name="check_out" required>
+      </label>
+      <label class="full">
+        Special requests
+        <textarea name="special_requests" placeholder="Arrival time, parking, bed setup, or anything else."></textarea>
+      </label>
+      <div class="button-row full">
+        <button class="btn btn-primary" type="submit">Request booking</button>
+        <a class="btn btn-secondary" href="/search">Verify a landlord instead</a>
+      </div>
+    </form>
+  </article>
+
+  <aside class="note-box booking-side">
+    <h3>Need a quick pick?</h3>
+    <p>Start with the first available stay and refine after you see the options.</p>
+    {% if featured_listing %}
+    <div class="portal-card">
+      <span>Featured listing</span>
+      <strong>{{ featured_listing.name }}</strong>
+      <p>{{ featured_listing.area }} • KES {{ featured_listing.nightly_rate }} / night</p>
+    </div>
+    {% endif %}
+  </aside>
+</section>
+{% endblock %}

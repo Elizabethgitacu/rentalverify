@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#142b54" />
+      <stop offset="55%" stop-color="#1d3b73" />
+      <stop offset="100%" stop-color="#28497f" />
+    </linearGradient>
+    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0f2144" stop-opacity="0" />
+      <stop offset="100%" stop-color="#0f2144" stop-opacity="0.75" />
+    </linearGradient>
+  </defs>
+
+  <rect width="900" height="1200" fill="url(#sky)" />
+
+  <circle cx="700" cy="200" r="90" fill="#ffffff" opacity="0.05" />
+  <circle cx="700" cy="200" r="55" fill="#ffffff" opacity="0.07" />
+
+  <!-- distant skyline -->
+  <g opacity="0.35" fill="#0f2144">
+    <rect x="-20" y="640" width="110" height="360" />
+    <rect x="90" y="580" width="90" height="420" />
+    <rect x="190" y="660" width="70" height="340" />
+    <rect x="640" y="600" width="100" height="400" />
+    <rect x="750" y="660" width="80" height="340" />
+    <rect x="830" y="560" width="100" height="440" />
+  </g>
+
+  <!-- foreground apartment blocks -->
+  <g fill="#0c1c38">
+    <rect x="40" y="760" width="180" height="440" rx="6" />
+    <rect x="240" y="700" width="150" height="500" rx="6" />
+    <rect x="410" y="820" width="200" height="380" rx="6" />
+    <rect x="630" y="740" width="170" height="460" rx="6" />
+    <rect x="780" y="800" width="140" height="400" rx="6" />
+  </g>
+
+  <!-- lit windows (warm accent glow) -->
+  <g fill="#e3ab5c" opacity="0.85">
+    <g id="win-a">
+      <rect x="64" y="792" width="20" height="26" rx="2" />
+      <rect x="104" y="792" width="20" height="26" rx="2" />
+      <rect x="144" y="792" width="20" height="26" rx="2" />
+      <rect x="184" y="792" width="20" height="26" rx="2" />
+      <rect x="64" y="848" width="20" height="26" rx="2" />
+      <rect x="144" y="848" width="20" height="26" rx="2" />
+      <rect x="184" y="848" width="20" height="26" rx="2" />
+      <rect x="104" y="904" width="20" height="26" rx="2" />
+      <rect x="184" y="904" width="20" height="26" rx="2" />
+      <rect x="64" y="960" width="20" height="26" rx="2" />
+      <rect x="144" y="960" width="20" height="26" rx="2" />
+    </g>
+    <g id="win-b">
+      <rect x="264" y="732" width="20" height="26" rx="2" />
+      <rect x="304" y="732" width="20" height="26" rx="2" />
+      <rect x="344" y="732" width="20" height="26" rx="2" />
+      <rect x="264" y="788" width="20" height="26" rx="2" />
+      <rect x="344" y="788" width="20" height="26" rx="2" />
+      <rect x="304" y="844" width="20" height="26" rx="2" />
+      <rect x="264" y="900" width="20" height="26" rx="2" />
+      <rect x="344" y="900" width="20" height="26" rx="2" />
+      <rect x="304" y="956" width="20" height="26" rx="2" />
+    </g>
+    <g id="win-c">
+      <rect x="440" y="852" width="24" height="30" rx="2" />
+      <rect x="490" y="852" width="24" height="30" rx="2" />
+      <rect x="540" y="852" width="24" height="30" rx="2" />
+      <rect x="440" y="916" width="24" height="30" rx="2" />
+      <rect x="540" y="916" width="24" height="30" rx="2" />
+      <rect x="490" y="980" width="24" height="30" rx="2" />
+      <rect x="440" y="1044" width="24" height="30" rx="2" />
+      <rect x="540" y="1044" width="24" height="30" rx="2" />
+    </g>
+    <g id="win-d">
+      <rect x="656" y="772" width="20" height="26" rx="2" />
+      <rect x="696" y="772" width="20" height="26" rx="2" />
+      <rect x="736" y="772" width="20" height="26" rx="2" />
+      <rect x="656" y="828" width="20" height="26" rx="2" />
+      <rect x="736" y="828" width="20" height="26" rx="2" />
+      <rect x="696" y="884" width="20" height="26" rx="2" />
+      <rect x="656" y="940" width="20" height="26" rx="2" />
+      <rect x="736" y="940" width="20" height="26" rx="2" />
+    </g>
+    <g id="win-e">
+      <rect x="800" y="832" width="20" height="26" rx="2" />
+      <rect x="840" y="832" width="20" height="26" rx="2" />
+      <rect x="800" y="888" width="20" height="26" rx="2" />
+      <rect x="840" y="888" width="20" height="26" rx="2" />
+      <rect x="800" y="944" width="20" height="26" rx="2" />
+    </g>
+  </g>
+
+  <!-- ground line -->
+  <rect x="0" y="1180" width="900" height="20" fill="#0a1830" />
+
+  <!-- bottom fade for text legibility -->
+  <rect width="900" height="1200" fill="url(#fade)" />
+</svg>

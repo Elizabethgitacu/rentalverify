@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Booking Confirmation - RentalVerify{% endblock %}
+{% block content %}
+<section class="page-head result-head">
+  <div>
+    <span class="eyebrow">Booking request</span>
+    <h1>Reservation request saved</h1>
+    <p>{% if booking %}Your reference number is {{ booking.reference_number }}.{% else %}Your reference number is {{ reference }}.{% endif %}</p>
+  </div>
+  <div class="result-head-card">
+    <span>Status</span>
+    <strong>{% if booking %}{{ booking.status|capitalize }}{% else %}Pending{% endif %}</strong>
+    <p>The request is stored in the booking database and ready for follow-up.</p>
+  </div>
+</section>
+
+<section class="result-grid">
+  <article class="card confirmation-card">
+    <div class="panel-label">Reference number</div>
+    <div class="big-ref">{% if booking %}{{ booking.reference_number }}{% else %}{{ reference }}{% endif %}</div>
+    {% if booking %}
+    <div class="detail-grid booking-summary">
+      <div><span>Stay</span><strong>{{ booking.listing_name }}</strong></div>
+      <div><span>Area</span><strong>{{ booking.area }}</strong></div>
+      <div><span>Check-in</span><strong>{{ booking.check_in }}</strong></div>
+      <div><span>Check-out</span><strong>{{ booking.check_out }}</strong></div>
+      <div><span>Guests</span><strong>{{ booking.guests }}</strong></div>
+      <div><span>Nightly rate</span><strong>KES {{ booking.nightly_rate }}</strong></div>
+    </div>
+    {% endif %}
+    <div class="button-row">
+      <a class="btn btn-primary" href="/bnb">Browse more stays</a>
+      <a class="btn btn-secondary" href="/search">Verify a landlord</a>
+    </div>
+  </article>
+
+  <aside class="note-box search-note">
+    <h3>Next steps</h3>
+    <ul class="plain-list">
+      <li>Save the reference number for your records.</li>
+      <li>Wait for confirmation before paying any deposit.</li>
+      <li>Use RentalVerify again if details change.</li>
+    </ul>
+  </aside>
+</section>
+{% endblock %}
